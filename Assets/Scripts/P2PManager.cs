@@ -26,7 +26,7 @@ public class P2P_Manager : MonoBehaviour
         {
             Debug.Log($"Client connected: {clientId}");
         }
-    
+
     }
 
 
@@ -130,15 +130,28 @@ public class P2P_Manager : MonoBehaviour
     // Helper method to get local IP address
     public static string GetLocalIPAddress()
     {
-        var host = Dns.GetHostEntry(Dns.GetHostName());
-        foreach (var ip in host.AddressList)
+        try
         {
-            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
             {
-                return ip.ToString();
+                socket.Connect("8.8.8.8", 65530); // Google DNS
+                IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+                return endPoint.Address.ToString();
             }
         }
-        return "127.0.0.1";
+        catch
+        {
+            // Fallback to previous method
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            return "127.0.0.1";
+        }
     }
 
     // Debug method to test UDP port availability
