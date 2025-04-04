@@ -63,12 +63,6 @@ public class PlayerMovementP2P : NetworkBehaviour
 
     private void Start()
     {
-        if (!IsOwner)
-        {
-            rb.isKinematic = true;
-            return;
-        }
-
         rb.freezeRotation = true;
         rb.linearDamping = 0f;
     }
@@ -193,8 +187,25 @@ public class PlayerMovementP2P : NetworkBehaviour
     {
         if (IsOwner)
         {
-            // Request spawn position from server
-            RequestSpawnPositionServerRpc(NetworkManager.Singleton.LocalClientId);
+            // Only move the player if they're newly spawned
+            if (NetworkManager.Singleton.IsServer)
+            {
+                // Server sets initial position
+                transform.position = SpawnManager.Instance.GetNextSpawnPosition();
+            }
+            else
+            {
+                // Clients request spawn position from server
+                RequestSpawnPositionServerRpc(NetworkManager.Singleton.LocalClientId);
+            }
+        }
+        else
+        {
+            // Disable unnecessary components on remote players
+            var camera = GetComponentInChildren<Camera>();
+            if (camera != null) camera.enabled = false;
+            var audioListener = GetComponentInChildren<AudioListener>();
+            if (audioListener != null) audioListener.enabled = false;
         }
     }
 
