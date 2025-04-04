@@ -23,10 +23,11 @@ public class PlayerMovementP2P : NetworkBehaviour
     public float networkUpdateRate = 0.1f;
     private float lastNetworkUpdateTime;
 
+    // Changed to ServerWrite permission since only server should update the authoritative state
     private NetworkVariable<PlayerNetworkState> networkState = new NetworkVariable<PlayerNetworkState>(
         new PlayerNetworkState(),
         NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner
+        NetworkVariableWritePermission.Server
     );
 
     private bool grounded;
@@ -124,14 +125,8 @@ public class PlayerMovementP2P : NetworkBehaviour
             IsJumping = !readyToJump
         };
 
-        if (IsServer)
-        {
-            networkState.Value = state;
-        }
-        else
-        {
-            UpdateServerStateServerRpc(state);
-        }
+        // Always send via ServerRpc, even if we're the host
+        UpdateServerStateServerRpc(state);
     }
 
     [ServerRpc]
@@ -196,13 +191,37 @@ public class PlayerMovementP2P : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!IsOwner)
+        if (IsOwner)
+        {
+            // Only move the player if they're newly spawned
+            if (NetworkManager.Singleton.IsServer)
+            {
+                // Server sets initial position
+                transform.position = SpawnManager.Instance.GetNextSpawnPosition();
+            }
+            else
+            {
+                // Clients request spawn position from server
+                RequestSpawnPositionServerRpc(NetworkManager.Singleton.LocalClientId);
+            }
+        }
+        else
         {
             // Disable unnecessary components on remote players
             var camera = GetComponentInChildren<Camera>();
             if (camera != null) camera.enabled = false;
             var audioListener = GetComponentInChildren<AudioListener>();
             if (audioListener != null) audioListener.enabled = false;
+        }
+    }
+
+    [ServerRpc]
+    private void RequestSpawnPositionServerRpc(ulong clientId)
+    {
+        // Find the player object for this client
+        if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var networkedClient))
+        {
+            networkedClient.PlayerObject.transform.position = SpawnManager.Instance.GetNextSpawnPosition();
         }
     }
 }
