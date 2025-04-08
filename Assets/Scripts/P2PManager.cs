@@ -11,12 +11,18 @@ public class P2P_Manager : MonoBehaviour
 {
     [Header("UI Elements")]
     public TMP_InputField ipInputField;
+
+    public TMP_Text hostIp;
+
     public ushort port = 25000;
-    public TextMeshProUGUI connectionStatusText;
+    public TMP_Text connectionStatusText;
 
     private UnityTransport transport;
     private UdpClient testUdpListener;
     private bool isUdpPortAvailable = true;
+
+    public TopDownViewInteract topDownViewInteract; // Reference to the Roleta script
+
 
 
 
@@ -67,6 +73,9 @@ public class P2P_Manager : MonoBehaviour
         if (NetworkManager.Singleton.StartHost())
         {
             UpdateStatus($"Hosting on UDP port {port}\nLocal IP: {GetLocalIPAddress()}");
+            topDownViewInteract.inGame = true; // Set inGame to true in Roleta script
+            hostIp.text = $"Host IP: {GetLocalIPAddress()}";
+
         }
         else
         {
@@ -112,7 +121,9 @@ public class P2P_Manager : MonoBehaviour
 
         if (NetworkManager.Singleton.StartClient())
         {
+            topDownViewInteract.inGame = true;
             Debug.Log($"UDP Client started to connect to {targetIP}:{port}");
+
         }
         else
         {
