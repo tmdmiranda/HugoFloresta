@@ -38,6 +38,8 @@ public class PlayerMovementP2P : NetworkBehaviour
     private Rigidbody rb;
     private Transform orientation;
 
+    [SerializeField] private GameObject enemyPrefab;
+
     private struct PlayerNetworkState : INetworkSerializable
     {
         public Vector3 Position;
@@ -192,6 +194,7 @@ public class PlayerMovementP2P : NetworkBehaviour
             {
                 // Server sets initial position
                 transform.position = SpawnManager.Instance.GetNextSpawnPosition();
+                SpawnEnemy();
             }
             else
             {
@@ -206,6 +209,32 @@ public class PlayerMovementP2P : NetworkBehaviour
             if (camera != null) camera.enabled = false;
             var audioListener = GetComponentInChildren<AudioListener>();
             if (audioListener != null) audioListener.enabled = false;
+        }
+    }
+
+    private void SpawnEnemy()
+    {
+        if (enemyPrefab == null)
+        {
+            Debug.LogError("Enemy Prefab is not assigned!");
+            return;
+        }
+
+        // Instantiate enemy at a spawn point
+        Vector3 spawnPosition = SpawnManager.Instance.GetNextSpawnPosition(); // Use SpawnManager for position
+        GameObject enemy = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+
+        // Spawn the enemy on the network
+        NetworkObject netObj = enemy.GetComponent<NetworkObject>();
+        if (netObj != null)
+        {
+            netObj.Spawn();
+            Debug.Log("Spawned enemy on the network");
+        }
+        else
+        {
+            Debug.LogError("NetworkObject component not found on enemy prefab!");
+            Destroy(enemy);
         }
     }
 
