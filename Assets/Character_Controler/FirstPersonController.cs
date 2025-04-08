@@ -50,11 +50,14 @@ public class FirstPersonController : NetworkBehaviour
         public float rotation;
         public double timestamp;
 
+        public bool isCrouching;
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref position);
             serializer.SerializeValue(ref rotation);
             serializer.SerializeValue(ref timestamp);
+            serializer.SerializeValue(ref isCrouching);
         }
     }
 
@@ -90,7 +93,6 @@ public class FirstPersonController : NetworkBehaviour
         }
         else
         {
-            HandleCrouching();
             SmoothRemoteMovement();
         }
     }
@@ -101,6 +103,7 @@ public class FirstPersonController : NetworkBehaviour
         {
             position = transform.position,
             rotation = verticalRotation,
+            isCrouching = playerInputHandler.CrouchTriggered,
             timestamp = Time.timeAsDouble
         });
     }
@@ -135,6 +138,9 @@ public class FirstPersonController : NetworkBehaviour
         transform.position = Vector3.Lerp(transform.position, targetPosition, 25f * Time.deltaTime);
         verticalRotation = Mathf.Lerp(verticalRotation, targetRotation, 25f * Time.deltaTime);
         mainCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
+
+        // Apply crouch state from network
+        ApplyCrouchState(networkState.Value.isCrouching);
     }
 
     private void HandleMovement()
@@ -178,21 +184,29 @@ public class FirstPersonController : NetworkBehaviour
 
     private void ApplyCrouchState(bool shouldCrouch)
     {
+        if (characterController == null) return;
+
         if (shouldCrouch)
         {
             characterController.height = 1f;
             characterController.center = new Vector3(0, -0.5f, 0);
             mainCamera.transform.localPosition = new Vector3(0, 0, 0);
-            playerBody.localPosition = new Vector3(0, -0.5f, 0);
-            playerBody.localScale = new Vector3(1, 0.5f, 1);
+            if (playerBody != null)
+            {
+                playerBody.localPosition = new Vector3(0, -0.5f, 0);
+                playerBody.localScale = new Vector3(1, 0.5f, 1);
+            }
         }
         else
         {
             characterController.height = 2f;
             characterController.center = new Vector3(0, 0, 0);
             mainCamera.transform.localPosition = new Vector3(0, 0.7f, 0);
-            playerBody.localPosition = new Vector3(0, 0, 0);
-            playerBody.localScale = new Vector3(1, 1, 1);
+            if (playerBody != null)
+            {
+                playerBody.localPosition = new Vector3(0, 0, 0);
+                playerBody.localScale = new Vector3(1, 1, 1);
+            }
         }
     }
 
