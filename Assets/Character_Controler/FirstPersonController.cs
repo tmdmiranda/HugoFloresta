@@ -142,6 +142,7 @@ public class FirstPersonController : NetworkBehaviour
         currentMovement.x = worldDirection.x * CurrentSpeed;
         currentMovement.z = worldDirection.z * CurrentSpeed;
 
+        HandleCrouching();
         HandleJumping();
         characterController.Move(currentMovement * Time.deltaTime);
     }
