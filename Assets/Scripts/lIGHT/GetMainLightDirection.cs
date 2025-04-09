@@ -15,5 +15,7 @@ public class GetMainLightDirection : MonoBehaviour
     private void Update()
     {
         skyboxMaterial.SetVector("_LightDir", transform.forward);
+        skyboxMaterial.SetVector("_MainLightUp", transform.up);
+        skyboxMaterial.SetVector("_MainLightRight", transform.right);
     }
 }

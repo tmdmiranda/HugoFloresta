@@ -35,24 +35,34 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _MoonTex:
+        m_Texture: {fileID: 2800000, guid: 6e6005dcb7501b046a5b46298a56a859, type: 3}
+        m_Scale: {x: 2.22, y: 3.54}
+        m_Offset: {x: 2.53, y: -0.53}
+    - _Skybox_4b8f2bc5fe3146d0bc44f02c4150a596_MoonTex_321446523_Texture2D:
+        m_Texture: {fileID: 2800000, guid: 6e6005dcb7501b046a5b46298a56a859, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _BUILTIN_QueueControl: 0
     - _BUILTIN_QueueOffset: 0
     - _DayNight: 1
-    - _HorizonBlend: 5.04
+    - _HorizonBlend: 4.34
     - _NadirBlend: 1.76
-    - _StarBright: 62
-    - _StarHeight: 281
+    - _StarBright: 58
+    - _StarHeight: 225
     - _StarInt: 250
-    - _SunSize: 0.11
-    - _ZenithBlend: 0.06
+    - _SunSize: 0.15
+    - _ZenithBlend: 0.68
     m_Colors:
-    - _GroundColor: {r: 0.05660379, g: 0.05660379, b: 0.05660379, a: 0}
-    - _HorizonColor: {r: 0.13207549, g: 0.12693577, b: 0.12522252, a: 0}
-    - _NightSkyColor: {r: 0.063056245, g: 0.07629742, b: 0.122641504, a: 0}
-    - _SkyColor: {r: 0.2732734, g: 0.66536134, b: 0.8396226, a: 0}
-    - _SunColor: {r: 4, g: 1.901171, b: 0, a: 0}
+    - _GroundColor: {r: 0.21422213, g: 0.2509263, b: 0.5471698, a: 0}
+    - _HorizonColor: {r: 0.12615697, g: 0.13065037, b: 0.14150941, a: 0}
+    - _MainLightRight: {r: 0.9895259, g: 0, b: 0.14435546, a: 0}
+    - _MainLightUp: {r: -0.09329075, g: 0.76311964, b: 0.6394883, a: 0}
+    - _NightSkyColor: {r: 0.024919897, g: 0.049509857, b: 0.1509434, a: 0}
+    - _SkyColor: {r: 0.047837317, g: 0.17487223, b: 0.23584908, a: 0}
+    - _SunColor: {r: 20.865898, g: 20.294405, b: 18.20845, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
