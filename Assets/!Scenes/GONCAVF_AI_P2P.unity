@@ -1198,6 +1198,7 @@ GameObject:
   - component: {fileID: 1906449921}
   - component: {fileID: 1906449924}
   - component: {fileID: 1906449926}
+  - component: {fileID: 1906449927}
   m_Layer: 0
   m_Name: Manager
   m_TagString: Untagged
@@ -1291,6 +1292,27 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   spawnPoints:
   - {fileID: 481815193}
+--- !u!114 &1906449927
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1906449920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df5fa11a879fb8e47a68531e7f1ccbf7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  enemyPrefab: {fileID: 0}
+  numberOfEnemies: 5
+  spawnRadius: 20
+  minDistanceBetweenEnemies: 2
+  spawnLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  navMeshSampleRange: 10
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

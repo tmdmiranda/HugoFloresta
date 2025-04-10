@@ -105,7 +105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 470258649
+  GlobalObjectIdHash: 3848042955
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -258,8 +258,10 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 3
   rotationSpeed: 5
-  detectionRange: 10
-  followRefreshRate: 0.5
+  acceleration: 8
+  stoppingDistance: 1
+  detectionRange: 30
+  followRefreshRate: 0.1
   wanderRadius: 5
   wanderTimer: 5
   minWanderDistance: 2
