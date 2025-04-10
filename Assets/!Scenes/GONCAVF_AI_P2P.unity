@@ -370,7 +370,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 255060594}
-    PlayerPrefab: {fileID: 970433277917147410, guid: 892f1cf1538b662439fe0754330e4894, type: 3}
+    PlayerPrefab: {fileID: 7591108086318982121, guid: 300523830fb5eb2459cb6c98f5811bae, type: 3}
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 146b729573c16ee49bb0af3dcbf77ab6, type: 2}
@@ -1305,10 +1305,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  enemyPrefab: {fileID: 0}
-  numberOfEnemies: 5
-  spawnRadius: 20
-  minDistanceBetweenEnemies: 2
+  enemyPrefab: {fileID: 8295708178410869919, guid: 8f716cc23fd7093479aa62d1e1357384, type: 3}
+  numberOfEnemies: 100
+  spawnRadius: 3000
+  minDistanceBetweenEnemies: 100
   spawnLayerMask:
     serializedVersion: 2
     m_Bits: 0
