@@ -8,7 +8,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System;
 
-public class P2P_Manager : MonoBehaviour
+public class P2P_Manager : NetworkBehaviour
 {
     [Header("UI Elements")]
     public TMP_InputField nameInputField; // Input field for player name
@@ -32,6 +32,7 @@ public class P2P_Manager : MonoBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
+        Debug.Log($"Client {clientId} connected!");
         if (!NetworkManager.Singleton.IsServer) return;
 
         // Check max connections
@@ -52,6 +53,7 @@ public class P2P_Manager : MonoBehaviour
         if (NetworkManager.Singleton.LocalClientId == clientId)
         {
             string name = nameInputField.text.Trim();
+            Debug.Log($"Requesting player name from client {clientId}");
             if (string.IsNullOrEmpty(name)) name = "Player" + clientId;
             SubmitPlayerNameServerRpc(name);
         }
@@ -60,6 +62,11 @@ public class P2P_Manager : MonoBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SubmitPlayerNameServerRpc(string name, ServerRpcParams rpcParams = default)
     {
+        if (IsOwner)
+        {
+            playerNames.Add("Owner");
+        }
+
         ulong clientId = rpcParams.Receive.SenderClientId;
         playerNames.Add(name);
 
