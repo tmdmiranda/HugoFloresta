@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Collections;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using TMPro;
@@ -10,6 +11,7 @@ using System;
 public class P2P_Manager : MonoBehaviour
 {
     [Header("UI Elements")]
+    public TMP_InputField nameInputField; // Input field for player name
     public TMP_InputField ipInputField;
 
     public TMP_Text hostIp;
@@ -20,19 +22,60 @@ public class P2P_Manager : MonoBehaviour
     private UnityTransport transport;
     private UdpClient testUdpListener;
     private bool isUdpPortAvailable = true;
-
+    private LobbyManager lobbyManager;
+    public int MaxConnections = 8; // Maximum number of connections allowed
     public TopDownViewInteract topDownViewInteract; // Reference to the Roleta script
 
+    public GameObject LobbyPanelprefab; // Reference to the lobby panel prefab
 
-
+    private NetworkList<FixedString32Bytes> playerNames;
 
     private void OnClientConnected(ulong clientId)
     {
-        if (NetworkManager.Singleton.IsServer)
+        if (!NetworkManager.Singleton.IsServer) return;
+
+        // Check max connections
+        if (NetworkManager.Singleton.ConnectedClients.Count > MaxConnections)
         {
-            Debug.Log($"Client connected: {clientId}");
+            Debug.Log($"Max connections reached. Rejecting client {clientId}");
+            NetworkManager.Singleton.DisconnectClient(clientId);
+            return;
         }
 
+        // Request client to send their name
+        RequestPlayerNameClientRpc(clientId);
+    }
+
+    [ClientRpc]
+    private void RequestPlayerNameClientRpc(ulong clientId)
+    {
+        if (NetworkManager.Singleton.LocalClientId == clientId)
+        {
+            string name = nameInputField.text.Trim();
+            if (string.IsNullOrEmpty(name)) name = "Player" + clientId;
+            SubmitPlayerNameServerRpc(name);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SubmitPlayerNameServerRpc(string name, ServerRpcParams rpcParams = default)
+    {
+        ulong clientId = rpcParams.Receive.SenderClientId;
+        playerNames.Add(name);
+
+        Debug.Log($"Client {clientId} connected with name: {name}");
+        UpdateLobbyUI();
+    }
+
+    private void UpdateLobbyUI()
+    {
+        if (lobbyManager == null)
+        {
+            var lobbyObj = Instantiate(LobbyPanelprefab);
+            lobbyManager = lobbyObj.GetComponent<LobbyManager>();
+        }
+
+        lobbyManager.UpdatePlayerList(playerNames);
     }
 
 
@@ -46,8 +89,18 @@ public class P2P_Manager : MonoBehaviour
         }
     }
 
+    public void StartGame()
+    {
+        {
+            topDownViewInteract.inGame = true; // Set inGame to true in Roleta script
+        }
+    }
+
+
+
     public void OnHostButtonClicked()
     {
+        Instantiate(LobbyPanelprefab);
         if (!IsPortAvailable())
         {
             UpdateStatus($"Port {port} is in use! Try another port.");
@@ -59,7 +112,6 @@ public class P2P_Manager : MonoBehaviour
             UpdateStatus("Already hosting!");
             return;
         }
-
         // Configure transport
         transport.SetConnectionData(
             "0.0.0.0",  // Listen on all interfaces
@@ -81,6 +133,7 @@ public class P2P_Manager : MonoBehaviour
         {
             UpdateStatus("Host failed to start!");
         }
+
     }
 
     public bool IsPortAvailable()
@@ -110,6 +163,7 @@ public class P2P_Manager : MonoBehaviour
 
     public void OnJoinButtonClicked()
     {
+        Instantiate(LobbyPanelprefab);
         string targetIP = ipInputField.text.Trim();
         if (string.IsNullOrEmpty(targetIP))
         {
