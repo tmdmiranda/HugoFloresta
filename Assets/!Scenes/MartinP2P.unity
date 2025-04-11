@@ -9308,7 +9308,7 @@ MonoBehaviour:
   connectionStatusText: {fileID: 2052207058}
   MaxConnections: 8
   topDownViewInteract: {fileID: 1511170765}
-  LobbyPanelprefab: {fileID: 0}
+  LobbyPanelprefab: {fileID: 832731032004663857, guid: 1da34cfdfaa58634cbeac59c7d45fb7b, type: 3}
 --- !u!114 &1906449922
 MonoBehaviour:
   m_ObjectHideFlags: 0
