@@ -15,10 +15,7 @@ public class LobbyManager : MonoBehaviour
             {
                 playerNamesText[i].text = playerNames[i].ToString();
             }
-            else
-            {
-                playerNamesText[i].text = "Waiting for player...";
-            }
+
         }
     }
 }

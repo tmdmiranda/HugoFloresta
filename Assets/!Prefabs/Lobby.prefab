@@ -405,8 +405,6 @@ GameObject:
   - component: {fileID: 4205892916821339263}
   - component: {fileID: 1018476534356384868}
   - component: {fileID: 4818337850342859983}
-  - component: {fileID: -6090107396558376681}
-  - component: {fileID: 2732487242843954738}
   m_Layer: 5
   m_Name: Lobby
   m_TagString: Untagged
@@ -436,6 +434,9 @@ RectTransform:
   - {fileID: 17612119850470137}
   - {fileID: 1090735013283545810}
   - {fileID: 4913188264421718470}
+  - {fileID: 1298699802252186006}
+  - {fileID: 4725233198774305285}
+  - {fileID: 1344612565881818177}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -481,35 +482,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &-6090107396558376681
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 832731032004663857}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 50a8da58a411e1344aa1cd33b078cb58, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerNamesText:
-  - {fileID: 8614000943778999211}
-  - {fileID: 8648146725494483777}
---- !u!114 &2732487242843954738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 832731032004663857}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8f0538c15bca9b4419aab4cc8d64fdee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  canvas: {fileID: 832731032004663857}
-  joinPrefab: {fileID: 0}
 --- !u!1 &1292708161825518719
 GameObject:
   m_ObjectHideFlags: 0
@@ -1886,8 +1858,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 4725233198774305285}
+  m_Children: []
   m_Father: {fileID: 4205892916821339263}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -1994,6 +1965,68 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &5346543016654952306
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1298699802252186006}
+  - component: {fileID: 4628582029185775296}
+  - component: {fileID: 5487673038436666639}
+  m_Layer: 0
+  m_Name: Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1298699802252186006
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5346543016654952306}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -384.97943, y: 155.143, z: -3.7082195}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4205892916821339263}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4628582029185775296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5346543016654952306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50a8da58a411e1344aa1cd33b078cb58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerNamesText:
+  - {fileID: 8614000943778999211}
+  - {fileID: 8648146725494483777}
+--- !u!114 &5487673038436666639
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5346543016654952306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0538c15bca9b4419aab4cc8d64fdee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canvas: {fileID: 832731032004663857}
+  joinPrefab: {fileID: 0}
 --- !u!1 &5430863465842955016
 GameObject:
   m_ObjectHideFlags: 0
@@ -2297,8 +2330,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1344612565881818177}
+  m_Children: []
   m_Father: {fileID: 4205892916821339263}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -2574,11 +2606,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2234453515991553888}
-  m_Father: {fileID: 4966834816445634310}
+  m_Father: {fileID: 4205892916821339263}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -354.78656}
+  m_AnchoredPosition: {x: -131.06903, y: 0}
   m_SizeDelta: {x: 190, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8255067075099419127
@@ -2695,11 +2727,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3044975060977635775}
-  m_Father: {fileID: 6654582724303860432}
+  m_Father: {fileID: 4205892916821339263}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 41.460327, y: -354.78656}
+  m_AnchoredPosition: {x: -770.27515, y: 0}
   m_SizeDelta: {x: 190, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3341276437828386960
@@ -3511,7 +3543,7 @@ PrefabInstance:
     - target: {fileID: 8686668300134991340, guid: 93ab4a6caaf3c5143898d338bd40f4e6, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 2732487242843954738}
+      objectReference: {fileID: 5487673038436666639}
     - target: {fileID: 8686668300134991340, guid: 93ab4a6caaf3c5143898d338bd40f4e6, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
