@@ -16,13 +16,14 @@ public class EnemySpawner : NetworkBehaviour
     {
         if (!IsServer) return;
         
-        if (!IsNavMeshReady())
+        if (!IsNavMeshReady())  
         {
             Debug.LogError("NavMesh not ready! Check your NavMesh baking.");
             return;
         }
         
-        SpawnEnemies();
+        if (IsOwner == true)
+            SpawnEnemies();
     }
 
     private bool IsNavMeshReady()
