@@ -30,6 +30,10 @@ public class P2P_Manager : NetworkBehaviour
 
     private NetworkList<FixedString32Bytes> playerNames;
 
+    private void Awake()
+    {
+        playerNames = new NetworkList<FixedString32Bytes>();
+    }
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"Client {clientId} connected!");
@@ -43,8 +47,19 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        // Request client to send their name
-        RequestPlayerNameClientRpc(clientId);
+        if (IsOwner == true)
+        {
+            playerNames.Add("Owner");
+            UpdateLobbyUI();
+            return;
+        }
+        else
+        {
+            // Request player name from the client
+            Debug.Log($"Requesting player name from client {clientId}");
+            RequestPlayerNameClientRpc(clientId);
+        }
+
     }
 
     [ClientRpc]
@@ -62,10 +77,7 @@ public class P2P_Manager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SubmitPlayerNameServerRpc(string name, ServerRpcParams rpcParams = default)
     {
-        if (IsOwner)
-        {
-            playerNames.Add("Owner");
-        }
+
 
         ulong clientId = rpcParams.Receive.SenderClientId;
         playerNames.Add(name);

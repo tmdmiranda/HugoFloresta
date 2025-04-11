@@ -9278,8 +9278,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1906449925}
   - component: {fileID: 1906449922}
-  - component: {fileID: 1906449921}
   - component: {fileID: 1906449924}
+  - component: {fileID: 1906449921}
   - component: {fileID: 1906449926}
   - component: {fileID: 1906449927}
   m_Layer: 0
@@ -9301,6 +9301,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d57c626f39da4fa409d8c9ee36425c34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   nameInputField: {fileID: 32334027}
   ipInputField: {fileID: 1526129206}
   hostIp: {fileID: 2052207058}
