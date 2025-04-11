@@ -11,6 +11,7 @@ public class LobbyManager : MonoBehaviour
     {
         for (int i = 0; i < playerNamesText.Length; i++)
         {
+            playerNamesText[i].text = "";// Hide all text elements first
             if (i < playerNames.Count)
             {
                 playerNamesText[i].text = playerNames[i].ToString();

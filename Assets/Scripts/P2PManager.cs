@@ -47,11 +47,11 @@ public class P2P_Manager : NetworkBehaviour
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
 
+        CreateLobbyUI();
         playerNames.OnListChanged += OnPlayerListChanged;
         
-        // Create lobby UI for all players
-        CreateLobbyUI();
-        UpdateLobbyUI();
+
+
     }
 
     private void CreateLobbyUI()
@@ -59,6 +59,7 @@ public class P2P_Manager : NetworkBehaviour
         if (lobbyPanelInstance != null) return;
 
         Canvas canvas = FindFirstObjectByType<Canvas>();
+
         lobbyPanelInstance = Instantiate(LobbyPanelPrefab, canvas.transform);
     }
 
@@ -77,7 +78,8 @@ public class P2P_Manager : NetworkBehaviour
 
         if (IsOwner)
         {
-            playerNames.Add(nameInputField.text.Trim());
+            playerNames.Add("Owner");
+            SubmitPlayerNameServerRpc("Owner");
         }
         else
         {
