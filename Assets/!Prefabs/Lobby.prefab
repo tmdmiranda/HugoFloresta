@@ -406,6 +406,7 @@ GameObject:
   - component: {fileID: 1018476534356384868}
   - component: {fileID: 4818337850342859983}
   - component: {fileID: -6090107396558376681}
+  - component: {fileID: 2732487242843954738}
   m_Layer: 5
   m_Name: Lobby
   m_TagString: Untagged
@@ -492,9 +493,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50a8da58a411e1344aa1cd33b078cb58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlayerGameObjects:
-  - {fileID: 4997783297419284543}
-  - {fileID: 5615968345809344626}
+  playerNamesText:
+  - {fileID: 8614000943778999211}
+  - {fileID: 8648146725494483777}
+--- !u!114 &2732487242843954738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 832731032004663857}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0538c15bca9b4419aab4cc8d64fdee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canvas: {fileID: 832731032004663857}
+  joinPrefab: {fileID: 0}
 --- !u!1 &1292708161825518719
 GameObject:
   m_ObjectHideFlags: 0
@@ -1859,7 +1874,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &6654582724303860432
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2270,7 +2285,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &4966834816445634310
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3493,6 +3508,10 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 8686668300134991340, guid: 93ab4a6caaf3c5143898d338bd40f4e6, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2732487242843954738}
     - target: {fileID: 8686668300134991340, guid: 93ab4a6caaf3c5143898d338bd40f4e6, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
