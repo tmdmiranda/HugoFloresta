@@ -17,12 +17,15 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/!Scenes/MARTINTEST.unity
     guid: ece003c19aecf7a4cb1d43c3efa9932b
-  - enabled: 1
+  - enabled: 0
     path: Assets/!Scenes/MartinP2P.unity
     guid: 392b51c50905f9d4aaf571fd06502881
-  - enabled: 1
+  - enabled: 0
     path: Assets/!Scenes/GONCAVF_AI_P2P.unity
     guid: 898c14444b2dbb043ad987a33250fc90
+  - enabled: 1
+    path: Assets/!Scenes/MainScene/MainScene.unity
+    guid: 55dee118eecec8e499ccba94e15a26df
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
