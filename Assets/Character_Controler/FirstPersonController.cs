@@ -1,9 +1,13 @@
-using UnityEngine;
-using Unity.Netcode;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
-public class FirstPersonController : NetworkBehaviour
+public class FirstPersonController : MonoBehaviour
 {
+    [Header("Player Status")]
+    [SerializeField] public bool playerCanMove = true;
+    [SerializeField] public bool playerCanLookAround = true;
+
     [Header("Movement Speeds")]
     [SerializeField] private float walkSpeed = 6.0f;
     [SerializeField] private float sprintMultiplier = 2.0f;
@@ -16,9 +20,16 @@ public class FirstPersonController : NetworkBehaviour
     [SerializeField] private float mouseSensitivity = 0.1f;
     [SerializeField] private float upDownLookRange = 80f;
 
-    [Header("Network")]
-    [SerializeField] private float networkUpdateRate = 0.008f; // ~120Hz
-    private float lastNetworkUpdateTime;
+    [Header("Utility Parameters")]
+    [SerializeField] private bool canUseHandBob = true;
+
+    //[Header("HeadBob Parameters")]
+    //[SerializeField] private float walkBob = 14f;
+    //[SerializeField] private float walkBobAmount = 0.5f;
+    //[SerializeField] private float sprintBob = 18f;
+    //[SerializeField] private float sprintBobAmount = 1f;
+    //[SerializeField] private float crouchBob = 8f;
+    //[SerializeField] private float crouchBobAmount = 0.25f;
 
     [Header("References")]
     [SerializeField] private CharacterController characterController;
@@ -26,121 +37,58 @@ public class FirstPersonController : NetworkBehaviour
     [SerializeField] private PlayerInputHandler playerInputHandler;
     [SerializeField] private Transform playerBody;
 
-    // Movement
+    // HeadBob Variables
+    private float defaultYPos = 0;
+    private float timer;
+    //===================
+
     private Vector3 currentMovement;
     private float verticalRotation;
-    private float CurrentSpeed => walkSpeed * (playerInputHandler.SprintTriggered ? sprintMultiplier : 1f);
+    private float CurrentSpeed => walkSpeed * (playerInputHandler.SprintTriggered ? sprintMultiplier : 1);
 
-    // Network state
-    private NetworkVariable<NetworkState> networkState = new NetworkVariable<NetworkState>(
-        new NetworkState(),
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
-
-    // Remote player smoothing
-    private Queue<Vector3> positionBuffer = new Queue<Vector3>(4);
-    private Queue<float> rotationBuffer = new Queue<float>(4);
-    private Vector3 targetPosition;
-    private float targetRotation;
-
-    private struct NetworkState : INetworkSerializable
+    void Start()
     {
-        public Vector3 position;
-        public float rotation;
-        public double timestamp;
-
-        public bool isCrouching;
-
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-        {
-            serializer.SerializeValue(ref position);
-            serializer.SerializeValue(ref rotation);
-            serializer.SerializeValue(ref timestamp);
-            serializer.SerializeValue(ref isCrouching);
-        }
-    }
-
-    public override void OnNetworkSpawn()
-    {
-        if (!IsOwner)
-        {
-            mainCamera.enabled = false;
-            mainCamera.GetComponent<AudioListener>().enabled = false;
-            return;
-        }
-
-        mainCamera.enabled = true;
-        mainCamera.GetComponent<AudioListener>().enabled = true;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-
+        defaultYPos = mainCamera.transform.localPosition.y;
     }
 
-    private void Update()
+    void Update()
     {
-        if (IsOwner)
+        if (playerCanLookAround == true)
         {
             HandleRotation();
+        }
+        if (playerCanMove == true)
+        {
             HandleMovement();
             HandleCrouching();
+        }
+    }
 
-            if (Time.time - lastNetworkUpdateTime >= networkUpdateRate)
+    private Vector3 CalculateWorldDirection()
+    {
+        Vector3 inputDirection = new Vector3(playerInputHandler.MovementInput.x, 0f, playerInputHandler.MovementInput.y);
+        Vector3 worldDirection = transform.TransformDirection(inputDirection);
+        return worldDirection.normalized;
+    }
+
+    private void HandleJumping()
+    {
+        if (characterController.isGrounded)
+        {
+            currentMovement.y = -0.5f;
+
+
+            if (playerInputHandler.JumpTriggered)
             {
-                SendNetworkUpdate();
-                lastNetworkUpdateTime = Time.time;
+                currentMovement.y = jumpForce;
             }
         }
         else
         {
-            SmoothRemoteMovement();
+            currentMovement.y += Physics.gravity.y * gravityMultiplier * Time.deltaTime;
         }
-    }
-
-    private void SendNetworkUpdate()
-    {
-        UpdateServerStateServerRpc(new NetworkState
-        {
-            position = transform.position,
-            rotation = verticalRotation,
-            isCrouching = playerInputHandler.CrouchTriggered,
-            timestamp = Time.timeAsDouble
-        });
-    }
-
-    [ServerRpc]
-    private void UpdateServerStateServerRpc(NetworkState state)
-    {
-        networkState.Value = state;
-    }
-
-    private void SmoothRemoteMovement()
-    {
-        // Buffer incoming states
-        positionBuffer.Enqueue(networkState.Value.position);
-        rotationBuffer.Enqueue(networkState.Value.rotation);
-        if (positionBuffer.Count > 4)
-        {
-            positionBuffer.Dequeue();
-            rotationBuffer.Dequeue();
-        }
-
-        // Calculate moving averages
-        targetPosition = Vector3.zero;
-        foreach (Vector3 pos in positionBuffer) targetPosition += pos;
-        targetPosition /= positionBuffer.Count;
-
-        targetRotation = 0f;
-        foreach (float rot in rotationBuffer) targetRotation += rot;
-        targetRotation /= rotationBuffer.Count;
-
-        // Direct interpolation
-        transform.position = Vector3.Lerp(transform.position, targetPosition, 25f * Time.deltaTime);
-        verticalRotation = Mathf.Lerp(verticalRotation, targetRotation, 25f * Time.deltaTime);
-        mainCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
-
-        // Apply crouch state from network
-        ApplyCrouchState(networkState.Value.isCrouching);
     }
 
     private void HandleMovement()
@@ -149,72 +97,61 @@ public class FirstPersonController : NetworkBehaviour
         currentMovement.x = worldDirection.x * CurrentSpeed;
         currentMovement.z = worldDirection.z * CurrentSpeed;
 
+
         HandleJumping();
         characterController.Move(currentMovement * Time.deltaTime);
     }
 
-    private Vector3 CalculateWorldDirection()
+    private void ApplyHorizontalRotation(float rotationAmount)
     {
-        Vector3 inputDirection = new Vector3(playerInputHandler.MovementInput.x, 0f, playerInputHandler.MovementInput.y);
-        return transform.TransformDirection(inputDirection).normalized;
+        transform.Rotate(0, rotationAmount, 0);
     }
 
-    private void HandleJumping()
+    private void ApplyVerticalRotation(float rotationAmount)
     {
-        if (characterController.isGrounded)
-        {
-            currentMovement.y = -0.5f;
-            if (playerInputHandler.JumpTriggered) currentMovement.y = jumpForce;
-        }
-        else
-        {
-            currentMovement.y += Physics.gravity.y * gravityMultiplier * Time.deltaTime;
-        }
+        verticalRotation = Mathf.Clamp(verticalRotation - rotationAmount, -upDownLookRange, upDownLookRange);
+        mainCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
     }
 
     private void HandleRotation()
     {
-        float mouseX = playerInputHandler.RotationInput.x * mouseSensitivity;
-        float mouseY = playerInputHandler.RotationInput.y * mouseSensitivity;
+        float mouseXRotation = playerInputHandler.RotationInput.x * mouseSensitivity;
+        float mouseYRotation = playerInputHandler.RotationInput.y * mouseSensitivity;
 
-        transform.Rotate(0, mouseX, 0);
-        verticalRotation = Mathf.Clamp(verticalRotation - mouseY, -upDownLookRange, upDownLookRange);
-        mainCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
+
+        ApplyHorizontalRotation(mouseXRotation);
+        ApplyVerticalRotation(mouseYRotation);
     }
 
-    private void ApplyCrouchState(bool shouldCrouch)
+    private void HandleCrouching()
     {
-        if (characterController == null) return;
-
-        if (shouldCrouch)
+        if (playerInputHandler.CrouchTriggered)
         {
             characterController.height = 1f;
             characterController.center = new Vector3(0, -0.5f, 0);
             mainCamera.transform.localPosition = new Vector3(0, 0, 0);
-            if (playerBody != null)
-            {
-                playerBody.localPosition = new Vector3(0, -0.5f, 0);
-                playerBody.localScale = new Vector3(1, 0.5f, 1);
-            }
+
+            //Transform Body
+            playerBody.localPosition = new Vector3(0, -0.5f, 0);
+            playerBody.localScale = new Vector3(1, 0.5f, 1);
         }
         else
         {
             characterController.height = 2f;
             characterController.center = new Vector3(0, 0, 0);
             mainCamera.transform.localPosition = new Vector3(0, 0.7f, 0);
-            if (playerBody != null)
-            {
-                playerBody.localPosition = new Vector3(0, 0, 0);
-                playerBody.localScale = new Vector3(1, 1, 1);
-            }
+
+            //Transform Body
+            playerBody.localPosition = new Vector3(0, 0, 0);
+            playerBody.localScale = new Vector3(1, 1, 1);
         }
     }
 
-    private void HandleCrouching()
+    private void HandleHeadBob()
     {
-        if (playerInputHandler != null)
+        if (canUseHandBob)
         {
-            ApplyCrouchState(playerInputHandler.CrouchTriggered);
+
         }
     }
 }
