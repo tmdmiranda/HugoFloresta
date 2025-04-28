@@ -4,14 +4,11 @@ using UnityEngine.UI;
 
 public class CanvasManager : MonoBehaviour
 {
-    public GameObject canvas;
     public GameObject joinPrefab;
-    public void OnClickDestroyPrefab()
-    {
-        Debug.Log("Destroying prefab");
-        canvas.SetActive(false);
-    }
+    public GameObject lobbyPrefab;
 
+    public GameObject canvas;
+    public GameObject startingMenuPrefab;
     public void OnClickActivateJoin()
     {
         joinPrefab.SetActive(true);
@@ -30,5 +27,14 @@ public class CanvasManager : MonoBehaviour
             Cursor.visible = false;
         }
     }
+
+    public void InstantiateLobbyPrefab()
+    {
+        Destroy(startingMenuPrefab);
+        Instantiate(lobbyPrefab, Vector3.zero, Quaternion.identity);
+
+    }
+
+
 
 }

@@ -50,6 +50,7 @@ MonoBehaviour:
   rotation: Rotation
   jump: Jump
   sprint: Sprint
+  crouch: Crouch
   interact: Crouch
 --- !u!1 &4954961083992475231
 GameObject:
@@ -287,6 +288,8 @@ GameObject:
   - component: {fileID: 1621628187475998740}
   - component: {fileID: 24112800437186847}
   - component: {fileID: -7261893497329658280}
+  - component: {fileID: 497777071144753403}
+  - component: {fileID: 6365927622199184313}
   m_Layer: 0
   m_Name: PlayerP2PFinal
   m_TagString: Player
@@ -374,14 +377,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20d180019a04c284db4a689bd603a7c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
+  playerCanMove: 1
+  playerCanLookAround: 1
   walkSpeed: 6
   sprintMultiplier: 2
   jumpForce: 4
   gravityMultiplier: 1
   mouseSensitivity: 0.1
   upDownLookRange: 80
-  networkUpdateRate: 0.05
+  canUseHandBob: 1
   characterController: {fileID: 2762749689487475004}
   mainCamera: {fileID: 4899290900934102824}
   playerInputHandler: {fileID: 5417053323684017991}
@@ -422,3 +426,32 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &497777071144753403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7591108086318982121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 868bafa9d0e33a54bb70ca8ec605b803, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &6365927622199184313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7591108086318982121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0b7d87e9e359aa4682f4293e58379d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  playerCamera: {fileID: 5836793228511005750}
+  audioListener: {fileID: 2391371082755190488}
+  characterController: {fileID: 2762749689487475004}

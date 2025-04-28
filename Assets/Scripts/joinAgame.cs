@@ -10,8 +10,7 @@ public class JoinAGame : MonoBehaviour
 
     private void Start()
     {
-        // Add a listener to the join button to call the JoinGame method when clicked
-        joinButton.onClick.AddListener(JoinGame);
+
     }
 
     public void JoinGame()

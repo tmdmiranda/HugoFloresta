@@ -5,31 +5,26 @@ public class SpawnManager : NetworkBehaviour
 {
     public static SpawnManager Instance;
     
+    [Header("Spawn Points")]
     [SerializeField] private Transform[] spawnPoints;
-    private int nextSpawnIndex = 0;
+    private NetworkVariable<int> nextSpawnIndex = new NetworkVariable<int>(0);
 
     private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-        }
         else
-        {
             Destroy(gameObject);
-        }
     }
 
+    // Server-authoritative spawn position selection
     public Vector3 GetNextSpawnPosition()
     {
-        if (spawnPoints.Length == 0)
-        {
-            Debug.LogError("No spawn points assigned!");
-            return Vector3.zero;
-        }
-        
-        Vector3 spawnPos = spawnPoints[nextSpawnIndex].position;
-        nextSpawnIndex = (nextSpawnIndex + 1) % spawnPoints.Length;
+        if (!IsServer || spawnPoints.Length == 0)
+            return Vector3.zero; // Fallback (shouldn't happen)
+
+        Vector3 spawnPos = spawnPoints[nextSpawnIndex.Value].position;
+        nextSpawnIndex.Value = (nextSpawnIndex.Value + 1) % spawnPoints.Length;
         return spawnPos;
     }
 }
