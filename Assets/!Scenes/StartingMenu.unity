@@ -1168,7 +1168,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 1621467456}
-    PlayerPrefab: {fileID: 0}
+    PlayerPrefab: {fileID: 7591108086318982121, guid: 300523830fb5eb2459cb6c98f5811bae, type: 3}
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 146b729573c16ee49bb0af3dcbf77ab6, type: 2}
@@ -1695,7 +1695,12 @@ MonoBehaviour:
   connectionStatusText: {fileID: 919897532}
   MaxConnections: 8
   LobbyPanelPrefab: {fileID: 832731032004663857, guid: 1da34cfdfaa58634cbeac59c7d45fb7b, type: 3}
-  PlayerPrefab: {fileID: 7591108086318982121, guid: 300523830fb5eb2459cb6c98f5811bae, type: 3}
+  PlayerPrefab:
+    Override: 1
+    Prefab: {fileID: 7591108086318982121, guid: 300523830fb5eb2459cb6c98f5811bae, type: 3}
+    SourcePrefabToOverride: {fileID: 7591108086318982121, guid: 300523830fb5eb2459cb6c98f5811bae, type: 3}
+    SourceHashToOverride: 0
+    OverridingTargetPrefab: {fileID: 7591108086318982121, guid: 300523830fb5eb2459cb6c98f5811bae, type: 3}
 --- !u!114 &2051217695
 MonoBehaviour:
   m_ObjectHideFlags: 0

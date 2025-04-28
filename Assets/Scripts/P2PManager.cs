@@ -11,6 +11,13 @@ using UnityEngine.SceneManagement;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
+using UnityEngine.InputSystem.Users;
+using System.Runtime.InteropServices;
+
+using UnityEngine.EventSystems;
+using UnityEngine.UIElements;
 
 
 
@@ -22,9 +29,11 @@ public class P2P_Manager : NetworkBehaviour
     public TMP_Text hostIp;
     public ushort port = 25000;
     public TMP_Text connectionStatusText;
+
+    private bool isPlayerPrefabRegistered = false;
     public int MaxConnections = 8;
     public GameObject LobbyPanelPrefab;
-    public GameObject PlayerPrefab;
+    public NetworkPrefab PlayerPrefab;
 
     private UnityTransport transport;
     private NetworkList<PlayerLobbyData> playerData;
@@ -49,9 +58,13 @@ public class P2P_Manager : NetworkBehaviour
         public override int GetHashCode() => clientId.GetHashCode();
     }
 
-    private void Awake() => playerData = new NetworkList<PlayerLobbyData>();
-
+    private void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
+        playerData = new NetworkList<PlayerLobbyData>();
+    }
     private bool isNetworkInitialized = false;
+
 
     private void Start()
     {
@@ -59,86 +72,151 @@ public class P2P_Manager : NetworkBehaviour
         // Remove the direct RegisterSceneCallbacks() call from here
     }
 
+    private void RegisterPlayerPrefab()
+    {
+        if (PlayerPrefab.Prefab == null)
+        {
+            Debug.LogError("PlayerPrefab is not assigned!");
+            return;
+        }
+
+        var netObj = PlayerPrefab.Prefab.GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+            Debug.LogError("PlayerPrefab is missing NetworkObject component!");
+            return;
+        }
+
+        var prefabList = NetworkManager.Singleton.NetworkConfig.Prefabs;
+
+        bool alreadyRegistered = NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs.Any(p => p.Prefab == PlayerPrefab.Prefab);
+
+
+        if (!alreadyRegistered)
+        {
+            prefabList.Add(PlayerPrefab);
+            Debug.Log("Player prefab registered successfully");
+        }
+        else
+        {
+            Debug.Log("Player prefab already registered");
+        }
+
+        isPlayerPrefabRegistered = true;
+    }
+
+
+
 
 
     private IEnumerator InitializeNetwork()
     {
         yield return new WaitUntil(() => NetworkManager.Singleton != null);
 
+        // Disable automatic player spawning
+        NetworkManager.Singleton.NetworkConfig.PlayerPrefab = null;
+
         transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
         if (transport == null)
             transport = NetworkManager.Singleton.gameObject.AddComponent<UnityTransport>();
 
         transport.SetConnectionData("0.0.0.0", port);
+
+        // ✅ REGISTER THE PREFAB HERE
+        RegisterPlayerPrefab();
+
+        // Also subscribe your callbacks
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
     }
 
 
+
+    // Modify your StartGame method
     public void StartGame()
     {
-        Debug.Log("Check 1 Done!");
-        if (!IsOwner) return; // Only host starts the game
+        Debug.Log("Attempting to start game...");
+        if (!IsServer) return;
+
+        Debug.Log("Server is starting game...");
         NetworkManager.Singleton.SceneManager.LoadScene("MartinP2P", LoadSceneMode.Single);
+        StartCoroutine(DelayedSpawnPlayers());
+    }
+
+    private IEnumerator DelayedSpawnPlayers()
+    {
+        Debug.Log("Waiting before spawning players...");
+        yield return new WaitForSeconds(2f); // wait 2 seconds for the scene to finish loading
+
+        Debug.Log("Spawning players now...");
         StartCoroutine(SpawnPlayersOneByOne());
     }
 
 
+
+
+
+
+
+
+
+
     private IEnumerator SpawnPlayersOneByOne()
     {
-        Debug.Log("Check 2 Done!");
-        if (!IsOwner) yield break;
+        Debug.Log("Starting player spawn sequence...");
+        if (!IsServer) yield break;
+
+        // Ensure prefab is registered
+        RegisterPlayerPrefab();
+        if (!isPlayerPrefabRegistered)
+        {
+            Debug.LogError("Cannot spawn players - prefab not registered!");
+            yield break;
+        }
+
+        // Wait an additional frame to ensure everything is ready
+        yield return null;
 
         var clients = new List<ulong>(NetworkManager.Singleton.ConnectedClientsIds);
         clients.Sort();
-        Debug.Log("Check 3 Done!");
+
+        Debug.Log($"Will spawn {clients.Count} players");
+
         for (int i = 0; i < clients.Count; i++)
         {
-            Debug.Log($"Check 4 Done! {i}");
             ulong clientId = clients[i];
 
-            // Get spawn position from SpawnManager
+            // Skip if player already exists
+            if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) &&
+                client.PlayerObject != null)
+            {
+                Debug.Log($"Player already exists for client {clientId}, skipping spawn.");
+                continue;
+            }
+
+            Debug.Log($"Spawning player for client {clientId} ({i + 1}/{clients.Count})");
+
             Vector3 spawnPos = new Vector3(915f, 50f, 418f);
-            Debug.Log($"Spawning at: {spawnPos}");
 
-            GameObject player = Instantiate(
-                PlayerPrefab,
-                spawnPos,
-                Quaternion.identity
-            );
-
+            // In SpawnPlayersOneByOne(), change the instantiation:
+            GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
-            netObj.SpawnWithOwnership(clientId);
 
-            Debug.Log($"Spawned player for client {clientId} at {spawnPos}");
+            if (netObj == null)
+            {
+                Debug.LogError("PlayerPrefab is missing NetworkObject component!");
+                continue;
+            }
 
-            if (i < clients.Count - 1)
-                yield return new WaitForSeconds(1f);
-        }
-    }
+            netObj.SpawnWithOwnership(clientId, true); // true = destroy with owner
+            Debug.Log($"Successfully spawned player for client {clientId}");
 
-    private void SpawnMyPlayer()
-    {
-        // 🔥 Find ALL spawn points in the scene dynamically
-        GameObject[] spawnObjects = GameObject.FindGameObjectsWithTag("SpawnPoint");
-        if (spawnObjects.Length == 0)
-        {
-            Debug.LogError("NO SPAWN POINTS FOUND! Did you tag them?");
-            return;
+            yield return new WaitForSeconds(0.5f); // Reduced delay between spawns
         }
 
-        // Pick a spawn based on your ID (or random)
-        int mySpawnIndex = (int)NetworkManager.Singleton.LocalClientId % spawnObjects.Length;
-        Vector3 spawnPos = spawnObjects[mySpawnIndex].transform.position;
-
-        // Spawn player (Netcode syncs it)
-        GameObject player = Instantiate(PlayerPrefab, spawnPos, Quaternion.identity);
-        player.GetComponent<NetworkObject>().Spawn();
+        Debug.Log("Finished spawning all players");
     }
 
-    private bool IsSceneLoaded(string sceneName)
-    {
-        return SceneManager.GetSceneByName(sceneName).isLoaded;
-    }
+
     public override void OnNetworkSpawn()
     {
         if (IsServer)
@@ -162,6 +240,17 @@ public class P2P_Manager : NetworkBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
+        Debug.Log($"Client connected: {clientId}");
+        if (!IsServer) return;
+
+        if (NetworkManager.Singleton.ConnectedClients.Count > MaxConnections)
+        {
+            Debug.Log($"Rejecting client {clientId} - max connections reached");
+            NetworkManager.Singleton.DisconnectClient(clientId);
+            return;
+        }
+
+        Debug.Log($"Processing connection for client {clientId}");
         if (!IsServer) return;
 
         if (NetworkManager.Singleton.ConnectedClients.Count > MaxConnections)
