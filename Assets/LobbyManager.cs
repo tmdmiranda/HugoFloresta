@@ -25,6 +25,7 @@ public class LobbyManager : MonoBehaviour
 
     public void UpdatePlayerList(NetworkList<P2P_Manager.PlayerLobbyData> players)
     {
+        Debug.Log("Updating player list...");
         // First hide all slots
         for (int i = 0; i < playerNameTexts.Length; i++)
         {

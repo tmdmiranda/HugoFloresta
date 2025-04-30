@@ -125,8 +125,6 @@ public class P2P_Manager : NetworkBehaviour
         // ✅ REGISTER THE PREFAB HERE
         RegisterPlayerPrefab();
 
-        // Also subscribe your callbacks
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
     }
 
 
@@ -217,26 +215,38 @@ public class P2P_Manager : NetworkBehaviour
     }
 
 
-    public override void OnNetworkSpawn()
+public override void OnNetworkSpawn()
+{
+    if (IsServer)
     {
-        if (IsServer)
-        {
-            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-        }
-        CreateLobbyUI();
-        playerData.OnListChanged += OnPlayerListChanged;
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
     }
+    CreateLobbyUI();
+    playerData.OnListChanged += OnPlayerListChanged;
+}
+
 
 
     private void CreateLobbyUI()
     {
-        if (lobbyPanelInstance == null)
+        if (lobbyPanelInstance != null)
         {
-            Canvas canvas = FindFirstObjectByType<Canvas>();
-            lobbyPanelInstance = Instantiate(LobbyPanelPrefab, canvas.transform);
+            Destroy(lobbyPanelInstance);
+        }
+
+        Canvas canvas = FindFirstObjectByType<Canvas>();
+        lobbyPanelInstance = Instantiate(LobbyPanelPrefab, canvas.transform);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (lobbyPanelInstance != null)
+        {
+            Destroy(lobbyPanelInstance);
         }
     }
+
 
     private void OnClientConnected(ulong clientId)
     {
@@ -305,15 +315,22 @@ public class P2P_Manager : NetworkBehaviour
     }
 
     private void OnPlayerListChanged(NetworkListEvent<PlayerLobbyData> _) => UpdateLobbyUI();
-
     private void UpdateLobbyUI()
     {
+        Debug.Log("Updating lobby UI with player data...");
         if (lobbyPanelInstance == null) return;
-        if (lobbyPanelInstance.TryGetComponent<LobbyManager>(out var lobbyManager))
+
+        LobbyManager lobbyManager = lobbyPanelInstance.GetComponentInChildren<LobbyManager>();
+        if (lobbyManager != null)
         {
             lobbyManager.UpdatePlayerList(playerData);
         }
+        else
+        {
+            Debug.LogWarning("LobbyManager component not found on lobbyPanelInstance!");
+        }
     }
+
 
     public void ToggleReadyStatus() => ToggleReadyServerRpc();
 

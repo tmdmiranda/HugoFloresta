@@ -138,7 +138,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &3865518655387362808
 RectTransform:
   m_ObjectHideFlags: 0
@@ -156,7 +156,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 219.7456, y: 354.78656}
+  m_AnchoredPosition: {x: 297.67505, y: 354.78656}
   m_SizeDelta: {x: 399.3397, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5373957879735642403
@@ -2146,8 +2146,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50a8da58a411e1344aa1cd33b078cb58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerNameTexts: []
-  playerReadyTexts: []
+  playerNameTexts:
+  - {fileID: 8614000943778999211}
+  - {fileID: 8648146725494483777}
+  - {fileID: 436882260918634117}
+  - {fileID: 4232896713878735261}
+  playerReadyTexts:
+  - {fileID: 3802726182023799646}
+  - {fileID: 8895396633705329538}
   readyColor: {r: 0, g: 1, b: 0, a: 1}
   waitingColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   startGameButton: {fileID: 7884363085648836279}
@@ -2306,7 +2312,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &7191930908511516647
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2460,7 +2466,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -131.06903, y: 354.78656}
+  m_AnchoredPosition: {x: -117.85266, y: 354.78656}
   m_SizeDelta: {x: 399.3397, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1080329233599782483

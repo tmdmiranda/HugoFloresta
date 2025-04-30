@@ -16,7 +16,7 @@ public class CanvasManager : MonoBehaviour
 
     void Update()
     {
-        if (canvas.activeSelf)
+            if (canvas.activeSelf)
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -27,14 +27,4 @@ public class CanvasManager : MonoBehaviour
             Cursor.visible = false;
         }
     }
-
-    public void InstantiateLobbyPrefab()
-    {
-        Destroy(startingMenuPrefab);
-        Instantiate(lobbyPrefab, Vector3.zero, Quaternion.identity);
-
-    }
-
-
-
 }
