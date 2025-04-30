@@ -9,6 +9,7 @@ public class LobbyManager : MonoBehaviour
     [Header("Player Displays")]
     public TMP_Text[] playerNameTexts;
     public TMP_Text[] playerReadyTexts;
+    public Button[] isReadyButtons;
     public Color readyColor = Color.green;
     public Color waitingColor = Color.yellow;
 
@@ -16,22 +17,28 @@ public class LobbyManager : MonoBehaviour
     public Button startGameButton;
     public TMP_Text startGameErrorText;
 
+    private P2P_Manager p2pManager;
+
     private void Start()
     {
-        // Only show start button for host
+        p2pManager = FindObjectOfType<P2P_Manager>();
         startGameButton.gameObject.SetActive(NetworkManager.Singleton.IsHost);
         startGameButton.onClick.AddListener(OnStartGameClicked);
     }
 
     public void UpdatePlayerList(NetworkList<P2P_Manager.PlayerLobbyData> players)
     {
-        Debug.Log("Updating player list...");
         // First hide all slots
         for (int i = 0; i < playerNameTexts.Length; i++)
         {
             playerNameTexts[i].gameObject.SetActive(false);
             if (playerReadyTexts != null && i < playerReadyTexts.Length)
                 playerReadyTexts[i].gameObject.SetActive(false);
+            if (isReadyButtons != null && i < isReadyButtons.Length)
+            {
+                isReadyButtons[i].gameObject.SetActive(false);
+                isReadyButtons[i].onClick.RemoveAllListeners();
+            }
         }
 
         // Then populate active players
@@ -39,17 +46,28 @@ public class LobbyManager : MonoBehaviour
         {
             var player = players[i];
             playerNameTexts[i].gameObject.SetActive(true);
+            isReadyButtons[i].gameObject.SetActive(true);
+            playerReadyTexts[i].gameObject.SetActive(true);
             playerNameTexts[i].text = player.playerName.ToString();
 
-            if (playerReadyTexts != null && i < playerReadyTexts.Length)
+            // Update ready status display for all players
+            playerReadyTexts[i].text = player.isReady ? "READY" : "WAITING";
+            playerReadyTexts[i].color = player.isReady ? readyColor : waitingColor;
+
+            // Only make the button interactable for this player
+            isReadyButtons[i].interactable = (player.clientId == NetworkManager.Singleton.LocalClientId);
+
+            // Add listener only for local player
+            if (player.clientId == NetworkManager.Singleton.LocalClientId)
             {
-                playerReadyTexts[i].gameObject.SetActive(true);
-                playerReadyTexts[i].text = player.isReady ? "READY" : "WAITING";
-                playerReadyTexts[i].color = player.isReady ? readyColor : waitingColor;
-            }
-            else
-            {
-                playerNameTexts[i].text += player.isReady ? " ✓" : "";
+                int index = i; // Capture the current index in a local variable
+                isReadyButtons[i].onClick.AddListener(() =>
+                {
+                    p2pManager.ToggleReadyStatus();
+                    // Update the button's visual state immediately
+                    playerReadyTexts[index].text = !player.isReady ? "READY" : "WAITING";
+                    playerReadyTexts[index].color = !player.isReady ? readyColor : waitingColor;
+                });
             }
         }
 
@@ -75,7 +93,7 @@ public class LobbyManager : MonoBehaviour
         }
 
         startGameButton.interactable = allReady && atLeastTwoPlayers;
-        
+
         if (!atLeastTwoPlayers)
         {
             startGameErrorText.text = "Need at least 2 players";
@@ -94,8 +112,6 @@ public class LobbyManager : MonoBehaviour
     {
         if (!NetworkManager.Singleton.IsHost) return;
 
-        // Get reference to P2P_Manager
-        P2P_Manager p2pManager = FindObjectOfType<P2P_Manager>();
         if (p2pManager != null)
         {
             p2pManager.StartGame();
@@ -107,7 +123,6 @@ public class LobbyManager : MonoBehaviour
         }
     }
 
-    // Called when host status changes
     public void OnHostStatusChanged(bool isHost)
     {
         startGameButton.gameObject.SetActive(isHost);
