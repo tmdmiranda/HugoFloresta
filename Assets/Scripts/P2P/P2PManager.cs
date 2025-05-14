@@ -38,7 +38,6 @@ public class P2P_Manager : NetworkBehaviour
     private UnityTransport transport;
     private NetworkList<PlayerLobbyData> playerData;
     private GameObject lobbyPanelInstance;
-    private NetworkVariable<bool> gameInProgress = new NetworkVariable<bool>(false);
 
     public struct PlayerLobbyData : INetworkSerializable, IEquatable<PlayerLobbyData>
     {
@@ -63,13 +62,11 @@ public class P2P_Manager : NetworkBehaviour
         DontDestroyOnLoad(gameObject);
         playerData = new NetworkList<PlayerLobbyData>();
     }
-    private bool isNetworkInitialized = false;
 
 
     private void Start()
     {
         StartCoroutine(InitializeNetwork());
-        // Remove the direct RegisterSceneCallbacks() call from here
     }
 
     private void RegisterPlayerPrefab()
@@ -105,15 +102,9 @@ public class P2P_Manager : NetworkBehaviour
         isPlayerPrefabRegistered = true;
     }
 
-
-
-
-
     private IEnumerator InitializeNetwork()
     {
         yield return new WaitUntil(() => NetworkManager.Singleton != null);
-
-        // Disable automatic player spawning
         NetworkManager.Singleton.NetworkConfig.PlayerPrefab = null;
 
         transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
@@ -122,20 +113,11 @@ public class P2P_Manager : NetworkBehaviour
 
         transport.SetConnectionData("0.0.0.0", port);
 
-        // ✅ REGISTER THE PREFAB HERE
         RegisterPlayerPrefab();
-
     }
-
-
-
-    // Modify your StartGame method
     public void StartGame()
     {
-        Debug.Log("Attempting to start game...");
         if (!IsServer) return;
-
-        Debug.Log("Server is starting game...");
         NetworkManager.Singleton.SceneManager.LoadScene("MartinP2P", LoadSceneMode.Single);
         StartCoroutine(DelayedSpawnPlayers());
     }
@@ -150,20 +132,11 @@ public class P2P_Manager : NetworkBehaviour
     }
 
 
-
-
-
-
-
-
-
-
     private IEnumerator SpawnPlayersOneByOne()
     {
         Debug.Log("Starting player spawn sequence...");
         if (!IsServer) yield break;
 
-        // Ensure prefab is registered
         RegisterPlayerPrefab();
         if (!isPlayerPrefabRegistered)
         {
@@ -171,7 +144,6 @@ public class P2P_Manager : NetworkBehaviour
             yield break;
         }
 
-        // Wait an additional frame to ensure everything is ready
         yield return null;
 
         var clients = new List<ulong>(NetworkManager.Singleton.ConnectedClientsIds);
@@ -182,8 +154,6 @@ public class P2P_Manager : NetworkBehaviour
         for (int i = 0; i < clients.Count; i++)
         {
             ulong clientId = clients[i];
-
-            // Skip if player already exists
             if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) &&
                 client.PlayerObject != null)
             {
@@ -194,8 +164,6 @@ public class P2P_Manager : NetworkBehaviour
             Debug.Log($"Spawning player for client {clientId} ({i + 1}/{clients.Count})");
 
             Vector3 spawnPos = new Vector3(915f, 50f, 418f);
-
-            // In SpawnPlayersOneByOne(), change the instantiation:
             GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
 
@@ -205,39 +173,27 @@ public class P2P_Manager : NetworkBehaviour
                 continue;
             }
 
-            netObj.SpawnWithOwnership(clientId, true); // true = destroy with owner
+            netObj.SpawnWithOwnership(clientId, true);
             Debug.Log($"Successfully spawned player for client {clientId}");
 
-            yield return new WaitForSeconds(0.5f); // Reduced delay between spawns
+            yield return new WaitForSeconds(0.5f);
         }
 
         Debug.Log("Finished spawning all players");
     }
 
 
-public override void OnNetworkSpawn()
-{
-    if (IsServer)
+    public override void OnNetworkSpawn()
     {
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-    }
-    CreateLobbyUI();
-    playerData.OnListChanged += OnPlayerListChanged;
-}
-
-
-
-    private void CreateLobbyUI()
-    {
-        if (lobbyPanelInstance != null)
+        if (IsServer)
         {
-            Destroy(lobbyPanelInstance);
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
-
-        Canvas canvas = FindFirstObjectByType<Canvas>();
-        lobbyPanelInstance = Instantiate(LobbyPanelPrefab, canvas.transform);
+        CreateLobbyUI();
+        playerData.OnListChanged += OnPlayerListChanged;
     }
+
 
     public override void OnNetworkDespawn()
     {
@@ -273,6 +229,19 @@ public override void OnNetworkSpawn()
             AddPlayerData(clientId, nameInputField.text.Trim());
         else
             RequestPlayerNameClientRpc(clientId);
+    }
+
+    //--- Lobby Data Management ---
+
+    private void CreateLobbyUI()
+    {
+        if (lobbyPanelInstance != null)
+        {
+            Destroy(lobbyPanelInstance);
+        }
+
+        Canvas canvas = FindFirstObjectByType<Canvas>();
+        lobbyPanelInstance = Instantiate(LobbyPanelPrefab, canvas.transform);
     }
 
     [ClientRpc]
@@ -350,7 +319,7 @@ public override void OnNetworkSpawn()
     }
 
 
-
+    // ---- UI Button Handlers -----
     public void OnHostButtonClicked()
     {
         if (!IsPortAvailable())
@@ -363,6 +332,7 @@ public override void OnNetworkSpawn()
         NetworkManager.Singleton.StartHost();
         UpdateStatus($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
         hostIp.text = $"Host IP: {GetLocalIPAddress()}";
+        Debug.Log($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
     }
 
     public void OnJoinButtonClicked()
@@ -374,6 +344,11 @@ public override void OnNetworkSpawn()
     private void UpdateStatus(string message)
         => connectionStatusText.text = message;
 
+
+
+
+    // ---- Utility functions -----
+    //This function checks if the specified port is available for use.
     private bool IsPortAvailable()
     {
         try
@@ -384,6 +359,8 @@ public override void OnNetworkSpawn()
         catch { return false; }
     }
 
+
+    //This function gets the local IP address of the host machine.
     public static string GetLocalIPAddress()
     {
         try
