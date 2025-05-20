@@ -118,7 +118,7 @@ public class P2P_Manager : NetworkBehaviour
     public void StartGame()
     {
         if (!IsServer) return;
-        NetworkManager.Singleton.SceneManager.LoadScene("MartinP2P", LoadSceneMode.Single);
+        NetworkManager.Singleton.SceneManager.LoadScene("MainScene", LoadSceneMode.Single);
         StartCoroutine(DelayedSpawnPlayers());
     }
 
