@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 
 using UnityEngine.EventSystems;
 using UnityEngine.UIElements;
+using System.Net.NetworkInformation;
 
 
 
@@ -333,13 +334,60 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        transport.SetConnectionData(GetLocalIPAddress(), port);
+        if (GetRadminIP() != null)
+        {
+            transport.SetConnectionData(GetRadminIP(), port);
+            UpdateStatus($"Hosting on port {port}\nIP: {GetRadminIP()}");
+            Debug.Log($"Hosting on port {port}\nIP: {GetRadminIP()}");
+        }
+        else
+        {
+            transport.SetConnectionData(GetLocalIPAddress(), port);
+            UpdateStatus($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
+            Debug.Log($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
+        }
+
         NetworkManager.Singleton.StartHost();
-        UpdateStatus($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
-        Debug.Log($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
-        Debug.Log($"Public IP: {GetPublicIPAddress()}");
     }
 
+    public List<string> GetAllLocalIPAddresses()
+    {
+        List<string> ipAddresses = new List<string>();
+
+        foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+        {
+            // Skip inactive/disconnected interfaces
+            if (ni.OperationalStatus != OperationalStatus.Up)
+                continue;
+
+            // Skip loopback and non-IPv4 interfaces
+            if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel)
+                continue;
+
+            // Get IP properties
+            IPInterfaceProperties ipProps = ni.GetIPProperties();
+            foreach (UnicastIPAddressInformation ip in ipProps.UnicastAddresses)
+            {
+                if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                {
+                    ipAddresses.Add(ip.Address.ToString());
+                }
+            }
+        }
+
+        return ipAddresses;
+    }
+
+    public string GetRadminIP()
+    {
+        foreach (string ip in GetAllLocalIPAddresses())
+        {
+            if (ip.StartsWith("26.")) // Radmin's typical subnet
+                return ip;
+        }
+        return null;
+    }
     public static string GetPublicIPAddress()
     {
         try
