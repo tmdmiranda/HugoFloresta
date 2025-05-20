@@ -331,8 +331,17 @@ public class P2P_Manager : NetworkBehaviour
         transport.SetConnectionData("0.0.0.0", port);
         NetworkManager.Singleton.StartHost();
         UpdateStatus($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
-        hostIp.text = $"Host IP: {GetLocalIPAddress()}";
         Debug.Log($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
+        Debug.Log($"Public IP: {GetPublicIPAddress()}");
+    }
+
+    public static string GetPublicIPAddress()
+    {
+        try
+        {
+            return new System.Net.WebClient().DownloadString("https://api.ipify.org");
+        }
+        catch { return "Cannot get public IP"; }
     }
 
     public void OnJoinButtonClicked()
@@ -367,10 +376,23 @@ public class P2P_Manager : NetworkBehaviour
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
             {
-                socket.Connect("8.8.8.8", 65530);
-                return (socket.LocalEndPoint as IPEndPoint)?.Address.ToString() ?? "127.0.0.1";
+                socket.Connect("8.8.8.8", 65530); // Google DNS
+                IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+                return endPoint.Address.ToString();
             }
         }
-        catch { return "127.0.0.1"; }
+        catch
+        {
+            // Fallback to previous method
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            return "127.0.0.1";
+        }
     }
 }
