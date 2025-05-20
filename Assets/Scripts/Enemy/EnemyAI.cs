@@ -10,28 +10,36 @@ public class EnemyAI : NetworkBehaviour
     public float rotationSpeed = 120f;
     public float acceleration = 8f;
     public float stoppingDistance = 1f;
-    
+
     [Header("Detection Settings")]
     public float detectionRange = 10f;
     public float followRefreshRate = 0.5f;
-    
+
     [Header("Wander Settings")]
     public float wanderRadius = 5f;
     public float wanderTimer = 5f;
     public float minWanderDistance = 2f;
 
+    [Header("Ground Settings")]
+    public float groundCheckDistance = 0.5f;
+    public LayerMask groundLayer;
+    public float groundSnapSpeed = 5f;
+
     private NavMeshAgent agent;
     private bool isAgentReady = false;
     private Coroutine behaviorCoroutine;
     private float currentSpeed;
-    private Vector3 lastDirection;
     private bool isChasing = false;
+    private NetworkVariable<Vector3> networkPosition = new NetworkVariable<Vector3>();
+    private NetworkVariable<Quaternion> networkRotation = new NetworkVariable<Quaternion>();
 
     void Start()
     {
         if (!IsServer)
         {
-            enabled = false;
+            // For clients, sync position with server values
+            networkPosition.OnValueChanged += OnPositionChanged;
+            networkRotation.OnValueChanged += OnRotationChanged;
             return;
         }
 
@@ -46,13 +54,54 @@ public class EnemyAI : NetworkBehaviour
         StartCoroutine(InitializeAgent());
     }
 
+    void Update()
+    {
+        if (!IsServer)
+        {
+            // Smoothly interpolate to network position for clients
+            transform.position = Vector3.Lerp(transform.position, networkPosition.Value, Time.deltaTime * 10f);
+            transform.rotation = Quaternion.Slerp(transform.rotation, networkRotation.Value, Time.deltaTime * 10f);
+            return;
+        }
+
+        // Server-side ground snapping
+        SnapToGround();
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
+        {
+            networkPosition.Value = transform.position;
+            networkRotation.Value = transform.rotation;
+        }
+    }
+
+    void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
+    {
+        // Client-side position update
+        if (!IsServer)
+        {
+            transform.position = newPos;
+        }
+    }
+
+    void OnRotationChanged(Quaternion oldRot, Quaternion newRot)
+    {
+        // Client-side rotation update
+        if (!IsServer)
+        {
+            transform.rotation = newRot;
+        }
+    }
+
     void ConfigureAgent()
     {
         agent.speed = speed;
         agent.angularSpeed = rotationSpeed;
         agent.acceleration = acceleration;
         agent.stoppingDistance = stoppingDistance;
-        agent.autoBraking = false; // Disable auto-braking for smoother transitions
+        agent.autoBraking = false;
+        agent.updatePosition = true;
+        agent.updateRotation = true;
+        agent.updateUpAxis = false; // Important for preventing Y-axis issues
     }
 
     IEnumerator InitializeAgent()
@@ -80,26 +129,57 @@ public class EnemyAI : NetworkBehaviour
         while (isAgentReady)
         {
             GameObject nearestPlayer = FindClosestPlayer();
-            
+
             if (nearestPlayer != null)
             {
-                if (!isChasing) // Only restart coroutine if we weren't already chasing
+                if (!isChasing)
                 {
                     isChasing = true;
-                    agent.autoBraking = false; // Smoother transitions when chasing
+                    agent.autoBraking = false;
                     agent.stoppingDistance = stoppingDistance;
                 }
                 yield return StartCoroutine(ChasePlayer(nearestPlayer));
             }
             else
             {
-                if (isChasing) // Only restart coroutine if we were chasing before
+                if (isChasing)
                 {
                     isChasing = false;
-                    agent.autoBraking = true; // Better for wandering
-                    agent.stoppingDistance = 0.1f; // Get closer to wander points
+                    agent.autoBraking = true;
+                    agent.stoppingDistance = 0.1f;
                 }
                 yield return StartCoroutine(Wander());
+            }
+
+            // Update network variables for clients
+            if (IsServer && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
+            {
+                networkPosition.Value = transform.position;
+                networkRotation.Value = transform.rotation;
+            }
+        }
+    }
+
+    void SnapToGround()
+    {
+        if (!IsServer) return;
+
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out hit, groundCheckDistance + 0.5f, groundLayer))
+        {
+            // Smoothly snap to ground
+            Vector3 targetPosition = new Vector3(
+                transform.position.x,
+                hit.point.y,
+                transform.position.z
+            );
+
+            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * groundSnapSpeed);
+
+            // Force NavMeshAgent to stay on ground
+            if (agent != null && agent.isOnNavMesh)
+            {
+                agent.Warp(transform.position);
             }
         }
     }
@@ -107,17 +187,15 @@ public class EnemyAI : NetworkBehaviour
     IEnumerator ChasePlayer(GameObject player)
     {
         float lastUpdateTime = Time.time;
-        
+
         while (player != null && Vector3.Distance(transform.position, player.transform.position) <= detectionRange)
         {
-            // Only update path at followRefreshRate intervals for performance
             if (Time.time - lastUpdateTime >= followRefreshRate)
             {
                 agent.SetDestination(player.transform.position);
                 lastUpdateTime = Time.time;
             }
 
-            // Smooth speed adjustment
             currentSpeed = Mathf.Lerp(currentSpeed, speed, Time.deltaTime * 2);
             agent.speed = currentSpeed;
 
@@ -128,8 +206,7 @@ public class EnemyAI : NetworkBehaviour
     IEnumerator Wander()
     {
         Vector3 wanderPoint = RandomNavSphere(transform.position, wanderRadius, -1);
-        
-        // Ensure the new position is far enough to be worth moving to
+
         while (Vector3.Distance(transform.position, wanderPoint) < minWanderDistance)
         {
             wanderPoint = RandomNavSphere(transform.position, wanderRadius, -1);
@@ -139,7 +216,6 @@ public class EnemyAI : NetworkBehaviour
         agent.SetDestination(wanderPoint);
         float startTime = Time.time;
 
-        // Smooth acceleration when starting to wander
         currentSpeed = 0;
         float accelerateTime = 0.5f;
         float elapsedTime = 0;
@@ -152,18 +228,15 @@ public class EnemyAI : NetworkBehaviour
             yield return null;
         }
 
-        // Continue wandering until reached destination or timer expires
-        while (Time.time - startTime < wanderTimer && 
-               agent.pathPending == false && 
+        while (Time.time - startTime < wanderTimer &&
+               agent.pathPending == false &&
                agent.remainingDistance > agent.stoppingDistance)
         {
-            // Smooth speed maintenance
             currentSpeed = Mathf.Lerp(currentSpeed, speed, Time.deltaTime);
             agent.speed = currentSpeed;
             yield return null;
         }
 
-        // Brief pause between wanders with smooth deceleration
         elapsedTime = 0;
         float decelerateTime = 0.3f;
         float startDecelSpeed = currentSpeed;
@@ -191,7 +264,7 @@ public class EnemyAI : NetworkBehaviour
         {
             GameObject obj = client.PlayerObject?.gameObject;
             if (obj == null) continue;
-            
+
             float dist = Vector3.Distance(transform.position, obj.transform.position);
             if (dist < minDist && dist <= detectionRange)
             {
@@ -206,10 +279,10 @@ public class EnemyAI : NetworkBehaviour
     {
         Vector3 randDirection = Random.insideUnitSphere * dist;
         randDirection += origin;
-        
+
         NavMeshHit navHit;
         NavMesh.SamplePosition(randDirection, out navHit, dist, layermask);
-        
+
         return navHit.position;
     }
 
@@ -221,6 +294,7 @@ public class EnemyAI : NetworkBehaviour
         if (NavMesh.SamplePosition(transform.position, out hit, 5f, NavMesh.AllAreas))
         {
             agent.Warp(hit.position);
+            transform.position = hit.position;
         }
     }
 
@@ -234,8 +308,11 @@ public class EnemyAI : NetworkBehaviour
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
-        
+
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, wanderRadius);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundCheckDistance);
     }
 }

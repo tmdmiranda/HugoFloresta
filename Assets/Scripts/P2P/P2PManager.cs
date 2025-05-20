@@ -328,11 +328,20 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        transport.SetConnectionData("0.0.0.0", port);
+        transport.SetConnectionData(GetLocalIPAddress(), port);
         NetworkManager.Singleton.StartHost();
         UpdateStatus($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
-        hostIp.text = $"Host IP: {GetLocalIPAddress()}";
         Debug.Log($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
+        Debug.Log($"Public IP: {GetPublicIPAddress()}");
+    }
+
+    public static string GetPublicIPAddress()
+    {
+        try
+        {
+            return new System.Net.WebClient().DownloadString("https://api.ipify.org");
+        }
+        catch { return "Cannot get public IP"; }
     }
 
     public void OnJoinButtonClicked()
