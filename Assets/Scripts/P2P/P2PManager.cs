@@ -328,7 +328,7 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        transport.SetConnectionData("0.0.0.0", port);
+        transport.SetConnectionData(GetLocalIPAddress(), port);
         NetworkManager.Singleton.StartHost();
         UpdateStatus($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
         Debug.Log($"Hosting on port {port}\nIP: {GetLocalIPAddress()}");
