@@ -1,18 +1,21 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class CarController : MonoBehaviour
+public class CarController : NetworkBehaviour
 {
     private float horizontalInput, verticalInput;
     private float currentSteerAngle, currentbreakForce;
     private bool isBreaking;
+
+    private bool isColiding;
     public bool playerInsideCar = false;
 
-    public Transform player;
+    public GameObject player;
 
     private CarInputHandler carInputHandler;
 
@@ -20,7 +23,7 @@ public class CarController : MonoBehaviour
     private bool isTransiting;
     [SerializeField] public Transform driverSeat;
     [SerializeField] public Transform exitPoint;
-    private float transitionSpeed = 0.2f;
+    private float transitionSpeed = 0.1f;
     [SerializeField] public Transform carCamera;
     [SerializeField] public Transform playerCameraY;
     [SerializeField] public Transform playerCameraX;
@@ -57,6 +60,40 @@ public class CarController : MonoBehaviour
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
     }
 
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            isColiding = true;
+            player = other.gameObject;
+            playerCameraY = player.GetComponentInChildren<Camera>().gameObject.transform;
+            playerCameraX = player.GetComponentInChildren<Camera>().gameObject.transform;
+        }
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            isColiding = false;
+        }
+    }
+    private IEnumerator FindPlayerWithDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay); // Wait for 'delay' seconds
+
+        player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
+        {
+            Debug.LogError("Player not found! Make sure the player has the 'Player' tag.");
+        }
+
+        playerCameraY = player.GetComponentInChildren<Camera>().gameObject.transform;
+        playerCameraX = player.GetComponentInChildren<Camera>().gameObject.transform;
+
+
+    }
+
     private void FixedUpdate()
     {
         GetInput();
@@ -66,6 +103,24 @@ public class CarController : MonoBehaviour
         UpdateSteeringWheel();
     }
 
+    private void EnterCar()
+    {
+        player.GetComponent<CharacterController>().enabled = false;
+        player.GetComponent<FirstPersonController>().playerCanMove = false;
+
+        // Smoothly move and rotate the player
+        player.transform.position = Vector3.MoveTowards(player.transform.position, driverSeat.position, 0.2f);
+        player.transform.rotation = Quaternion.RotateTowards(player.transform.rotation, driverSeat.rotation, 0.2f);
+
+        // Check if close enough to the target
+        if (Vector3.Distance(player.transform.position, driverSeat.position) < 0.01f)
+        {
+            player.transform.position = driverSeat.position; // Snap to position
+            player.transform.rotation = driverSeat.rotation; // Snap to rotation
+            isTransiting = false;
+            playerInsideCar = true;
+        }
+    }
     private void GetInput()
     {
         if (playerInsideCar == true)
@@ -118,17 +173,27 @@ public class CarController : MonoBehaviour
 
     private void Update()
     {
-        if (playerInsideCar && isTransiting) ExitCar();
-        else if (!playerInsideCar && isTransiting) EnterCar();
-
         if (Input.GetKeyDown(KeyCode.E))
         {
-            isTransiting = true;
+            if (isColiding)
+                isTransiting = true;
+
         }
 
-        if (playerInsideCar == true)
+        if (Input.GetKeyDown(KeyCode.F))
         {
-            player.position = driverSeat.position;
+            VanFlip();
+        }
+
+        if (isTransiting)
+        {
+            if (playerInsideCar) ExitCar();
+            else EnterCar();
+        }
+
+        if (playerInsideCar)
+        {
+            player.transform.position = driverSeat.position;
             carCameraLocker();
         }
     }
@@ -153,39 +218,45 @@ public class CarController : MonoBehaviour
 
     private void UpdateSteeringWheel()
     {
-        if (steeringWheel != null)
+        if (playerInsideCar)
         {
             float steeringAngle = horizontalInput * steeringWheelMaxRotation;
             steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -steeringAngle);
+
         }
     }
 
-    private void EnterCar()
-    {
-        player.GetComponent<CharacterController>().enabled = false;
-        player.GetComponent<FirstPersonController>().playerCanMove = false;
 
-        player.position = driverSeat.position;
-        player.rotation = Quaternion.Slerp(player.rotation, driverSeat.rotation, transitionSpeed);
-
-        if (player.position == driverSeat.position)
-        {
-            isTransiting = false;
-            playerInsideCar = true;
-        }
-    }
 
     private void ExitCar()
     {
-        player.position = exitPoint.position;
+        //set position
+        player.transform.position = exitPoint.position;
 
+        //set player camera direction in exit
+        playerCameraX.localRotation = Quaternion.Euler(0f, 0f, 0f);
+        playerCameraY.localRotation = Quaternion.Euler(0f, 0f, 0f);
+
+        //enables the player controller
         player.GetComponent<CharacterController>().enabled = true;
         player.GetComponent<FirstPersonController>().playerCanMove = true;
 
-        if (player.position == exitPoint.position)
+        if (player.transform.position == exitPoint.position)
         {
             isTransiting = false;
             playerInsideCar = false;
+        }
+    }
+
+    private void VanFlip()
+    {
+        Vector3 currentEuler = transform.eulerAngles;
+        transform.eulerAngles = new Vector3(0f, currentEuler.y, 0f);
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
     }
 }

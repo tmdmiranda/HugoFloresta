@@ -26,9 +26,11 @@ public class LobbyManager : MonoBehaviour
         startGameButton.onClick.AddListener(OnStartGameClicked);
     }
 
+    
+
     public void UpdatePlayerList(NetworkList<P2P_Manager.PlayerLobbyData> players)
     {
-        // First hide all slots
+
         for (int i = 0; i < playerNameTexts.Length; i++)
         {
             playerNameTexts[i].gameObject.SetActive(false);
@@ -39,7 +41,7 @@ public class LobbyManager : MonoBehaviour
                 isReadyButtons[i].gameObject.SetActive(false);
                 isReadyButtons[i].onClick.RemoveAllListeners();
             }
-        }
+        } 
 
         // Then populate active players
         for (int i = 0; i < players.Count && i < playerNameTexts.Length; i++)
@@ -81,7 +83,7 @@ public class LobbyManager : MonoBehaviour
     private void UpdateStartButtonState(NetworkList<P2P_Manager.PlayerLobbyData> players)
     {
         bool allReady = true;
-        bool atLeastTwoPlayers = players.Count >= 1;
+        bool atLeastTwoPlayers = players.Count >= 2;
 
         foreach (var player in players)
         {
@@ -105,7 +107,7 @@ public class LobbyManager : MonoBehaviour
         else
         {
             startGameErrorText.text = "";
-        }
+        } 
     }
 
     public void OnStartGameClicked()
@@ -128,4 +130,6 @@ public class LobbyManager : MonoBehaviour
         startGameButton.gameObject.SetActive(isHost);
         startGameErrorText.text = isHost ? "" : "Only host can start game";
     }
+
+    
 }

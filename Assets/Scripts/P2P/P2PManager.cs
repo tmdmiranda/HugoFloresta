@@ -137,14 +137,12 @@ public class P2P_Manager : NetworkBehaviour
         Debug.Log("Starting player spawn sequence...");
         if (!IsServer) yield break;
 
-        RegisterPlayerPrefab();
-        if (!isPlayerPrefabRegistered)
+        // Wait until NetworkManager is ready
+        while (NetworkManager.Singleton == null ||
+               NetworkManager.Singleton.SpawnManager == null)
         {
-            Debug.LogError("Cannot spawn players - prefab not registered!");
-            yield break;
+            yield return null;
         }
-
-        yield return null;
 
         var clients = new List<ulong>(NetworkManager.Singleton.ConnectedClientsIds);
         clients.Sort();
@@ -154,8 +152,9 @@ public class P2P_Manager : NetworkBehaviour
         for (int i = 0; i < clients.Count; i++)
         {
             ulong clientId = clients[i];
-            if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) &&
-                client.PlayerObject != null)
+
+            // Skip if player already exists
+            if (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId) != null)
             {
                 Debug.Log($"Player already exists for client {clientId}, skipping spawn.");
                 continue;
@@ -174,8 +173,14 @@ public class P2P_Manager : NetworkBehaviour
             }
 
             netObj.SpawnWithOwnership(clientId, true);
-            Debug.Log($"Successfully spawned player for client {clientId}");
 
+            // Wait until player is fully spawned
+            while (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId) == null)
+            {
+                yield return null;
+            }
+
+            Debug.Log($"Successfully spawned player for client {clientId}");
             yield return new WaitForSeconds(0.5f);
         }
 
