@@ -5,11 +5,18 @@ using System.Collections;
 
 public class EnemyAI : NetworkBehaviour
 {
+
+    [Header("Network Sync")]
+    public float networkSyncInterval = 0.1f;
+    private float lastSyncTime;
+    private Vector3 lastSyncedPosition;
+    private bool needsInitialSync = true;
     [Header("Movement Settings")]
     public float speed = 3f;
     public float rotationSpeed = 120f;
     public float acceleration = 8f;
     public float stoppingDistance = 1f;
+
 
     [Header("Detection Settings")]
     public float detectionRange = 10f;
@@ -54,34 +61,62 @@ public class EnemyAI : NetworkBehaviour
         StartCoroutine(InitializeAgent());
     }
 
+
+    void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
+    {
+        if (!IsServer)
+        {
+            // Only update if position changed significantly to prevent jitter
+            if (Vector3.Distance(transform.position, newPos) > 0.1f || needsInitialSync)
+            {
+                transform.position = newPos;
+                needsInitialSync = false;
+
+                // Immediately perform ground check after position update
+                ClientSnapToGround();
+            }
+        }
+    }
+    void ClientSnapToGround()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up * 0.5f,
+                           Vector3.down,
+                           out hit,
+                           groundCheckDistance + 0.5f,
+                           groundLayer))
+        {
+            // Only adjust Y position to prevent network position conflicts
+            float newY = Mathf.Lerp(transform.position.y, hit.point.y, Time.deltaTime * groundSnapSpeed);
+            transform.position = new Vector3(
+                transform.position.x,
+                newY,
+                transform.position.z
+            );
+        }
+    }
     void Update()
     {
         if (!IsServer)
         {
-            // Smoothly interpolate to network position for clients
-            transform.position = Vector3.Lerp(transform.position, networkPosition.Value, Time.deltaTime * 10f);
-            transform.rotation = Quaternion.Slerp(transform.rotation, networkRotation.Value, Time.deltaTime * 10f);
+            // Client-side ground snapping
+            ClientSnapToGround();
             return;
         }
 
-        // Server-side ground snapping
+        // Server-side updates
         SnapToGround();
 
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
+        // Network sync throttling
+        if (Time.time - lastSyncTime >= networkSyncInterval)
         {
             networkPosition.Value = transform.position;
             networkRotation.Value = transform.rotation;
+            lastSyncTime = Time.time;
         }
     }
 
-    void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
-    {
-        // Client-side position update
-        if (!IsServer)
-        {
-            transform.position = newPos;
-        }
-    }
+
 
     void OnRotationChanged(Quaternion oldRot, Quaternion newRot)
     {
