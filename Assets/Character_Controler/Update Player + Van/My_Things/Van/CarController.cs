@@ -14,9 +14,7 @@ public class CarController : MonoBehaviour
 
     public Transform player;
 
-    /// Mouse Input sttings
-    private Vector3 lastMousePosition;
-    private float mouseIdleTime = 0f;
+    private CarInputHandler carInputHandler;
 
     [Header("Drive Settings")]
     private bool isTransiting;
@@ -27,12 +25,12 @@ public class CarController : MonoBehaviour
     [SerializeField] public Transform playerCameraY;
     [SerializeField] public Transform playerCameraX;
 
-    [Header ("Car Settings")]
+    [Header("Car Settings")]
     [SerializeField] private float motorForce;
     [SerializeField] private float breakForce;
     [SerializeField] private float maxSteerAngle;
 
-    [Header ("Wheel Colliders")]
+    [Header("Wheel Colliders")]
     [SerializeField] private WheelCollider frontLeftWheelCollider;
     [SerializeField] private WheelCollider frontRightWheelCollider;
     [SerializeField] private WheelCollider rearLeftWheelCollider;
@@ -44,26 +42,37 @@ public class CarController : MonoBehaviour
     [SerializeField] private Transform rearLeftWheelTransform;
     [SerializeField] private Transform rearRightWheelTransform;
 
+    [Header("Steering Wheel")]
+    [SerializeField] private Transform steeringWheel;
+    [SerializeField] private float steeringWheelMaxRotation = 180f;
+
+    private Rigidbody rb;
+
+    private void Awake()
+    {
+        carInputHandler = GetComponent<CarInputHandler>();
+
+        //baixa o centro de massa do carro para nao capotar
+        rb = GetComponent<Rigidbody>();
+        rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
+    }
+
     private void FixedUpdate()
     {
         GetInput();
         HandleMotor();
         HandleSteering();
         UpdateWheels();
+        UpdateSteeringWheel();
     }
 
     private void GetInput()
     {
         if (playerInsideCar == true)
         {
-            // Steering Input
-            horizontalInput = Input.GetAxis("Horizontal");
-
-            // Acceleration Input
-            verticalInput = Input.GetAxis("Vertical");
-
-            // Breaking Input
-            isBreaking = Input.GetKey(KeyCode.Space);
+            horizontalInput = carInputHandler.SteerInput;
+            verticalInput = carInputHandler.AccelerateInput;
+            isBreaking = carInputHandler.BrakeInput;
         }
     }
 
@@ -120,29 +129,42 @@ public class CarController : MonoBehaviour
         if (playerInsideCar == true)
         {
             player.position = driverSeat.position;
-            CameraUpdateCar();
+            carCameraLocker();
         }
     }
 
-    private void CameraUpdateCar()
+    private void carCameraLocker()
     {
         if (playerInsideCar)
         {
-            // Update the player camera position and rotation to match the car camera
-            Quaternion newRotation = playerCameraX.rotation;
-            newRotation.eulerAngles = new Vector3(carCamera.rotation.eulerAngles.x, newRotation.eulerAngles.y, newRotation.eulerAngles.z);
-            playerCameraX.rotation = newRotation;
+            Vector3 carEulerAngles = carCamera.rotation.eulerAngles;
+            Vector3 cameraEulerAngles = playerCameraY.localEulerAngles;
 
+            if (cameraEulerAngles.y > 180f) cameraEulerAngles.y -= 360f;
+            if (carEulerAngles.y > 180f) carEulerAngles.y -= 360f;
+
+            float cameraYRelativeToCar = Mathf.DeltaAngle(carEulerAngles.y, cameraEulerAngles.y);
+            cameraYRelativeToCar = Mathf.Clamp(cameraYRelativeToCar, -90f, 90f);
+
+            float lockedY = carEulerAngles.y + cameraYRelativeToCar;
+            playerCameraY.rotation = Quaternion.Euler(carEulerAngles.x, lockedY, carEulerAngles.z);
+        }
+    }
+
+    private void UpdateSteeringWheel()
+    {
+        if (steeringWheel != null)
+        {
+            float steeringAngle = horizontalInput * steeringWheelMaxRotation;
+            steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -steeringAngle);
         }
     }
 
     private void EnterCar()
     {
-        // Disable player movement and physics
         player.GetComponent<CharacterController>().enabled = false;
         player.GetComponent<FirstPersonController>().playerCanMove = false;
 
-        //Set the player position to the driver seat
         player.position = driverSeat.position;
         player.rotation = Quaternion.Slerp(player.rotation, driverSeat.rotation, transitionSpeed);
 
@@ -151,15 +173,12 @@ public class CarController : MonoBehaviour
             isTransiting = false;
             playerInsideCar = true;
         }
-
     }
 
     private void ExitCar()
     {
-        //Set the player position to the exit point
         player.position = exitPoint.position;
 
-        // Enable player movement and physics
         player.GetComponent<CharacterController>().enabled = true;
         player.GetComponent<FirstPersonController>().playerCanMove = true;
 
@@ -168,6 +187,5 @@ public class CarController : MonoBehaviour
             isTransiting = false;
             playerInsideCar = false;
         }
-
     }
 }

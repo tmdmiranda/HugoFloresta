@@ -20,27 +20,11 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float mouseSensitivity = 0.1f;
     [SerializeField] private float upDownLookRange = 80f;
 
-    [Header("Utility Parameters")]
-    [SerializeField] private bool canUseHandBob = true;
-
-    //[Header("HeadBob Parameters")]
-    //[SerializeField] private float walkBob = 14f;
-    //[SerializeField] private float walkBobAmount = 0.5f;
-    //[SerializeField] private float sprintBob = 18f;
-    //[SerializeField] private float sprintBobAmount = 1f;
-    //[SerializeField] private float crouchBob = 8f;
-    //[SerializeField] private float crouchBobAmount = 0.25f;
-
     [Header("References")]
     [SerializeField] private CharacterController characterController;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private PlayerInputHandler playerInputHandler;
     [SerializeField] private Transform playerBody;
-
-    // HeadBob Variables
-    private float defaultYPos = 0;
-    private float timer;
-    //===================
 
     private Vector3 currentMovement;
     private float verticalRotation;
@@ -50,7 +34,6 @@ public class FirstPersonController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        defaultYPos = mainCamera.transform.localPosition.y;
     }
 
     void Update()
@@ -146,12 +129,5 @@ public class FirstPersonController : MonoBehaviour
             playerBody.localScale = new Vector3(1, 1, 1);
         }
     }
-
-    private void HandleHeadBob()
-    {
-        if (canUseHandBob)
-        {
-
-        }
-    }
 }
+
