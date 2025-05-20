@@ -81,7 +81,7 @@ public class LobbyManager : MonoBehaviour
     private void UpdateStartButtonState(NetworkList<P2P_Manager.PlayerLobbyData> players)
     {
         bool allReady = true;
-        bool atLeastTwoPlayers = players.Count >= 2;
+        bool atLeastTwoPlayers = players.Count >= 1;
 
         foreach (var player in players)
         {
