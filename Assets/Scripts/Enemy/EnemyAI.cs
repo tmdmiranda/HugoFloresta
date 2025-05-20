@@ -20,10 +20,10 @@ public class EnemyAI : NetworkBehaviour
     public float wanderTimer = 5f;
     public float minWanderDistance = 2f;
 
-    [Header("Ground Settings")]
+    /*[Header("Ground Settings")]
     public float groundCheckDistance = 0.5f;
     public LayerMask groundLayer;
-    public float groundSnapSpeed = 5f;
+    public float groundSnapSpeed = 5f;*/
 
     private NavMeshAgent agent;
     private bool isAgentReady = false;
@@ -38,8 +38,8 @@ public class EnemyAI : NetworkBehaviour
         if (!IsServer)
         {
             // For clients, sync position with server values
-            networkPosition.OnValueChanged += OnPositionChanged;
-            networkRotation.OnValueChanged += OnRotationChanged;
+            /*networkPosition.OnValueChanged += OnPositionChanged;
+            networkRotation.OnValueChanged += OnRotationChanged;*/
             return;
         }
 
@@ -65,7 +65,7 @@ public class EnemyAI : NetworkBehaviour
         }
 
         // Server-side ground snapping
-        SnapToGround();
+        // SnapToGround();
 
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
         {
@@ -74,23 +74,23 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
-    void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
+    /*void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
     {
         // Client-side position update
         if (!IsServer)
         {
             transform.position = newPos;
         }
-    }
+    }*/
 
-    void OnRotationChanged(Quaternion oldRot, Quaternion newRot)
+    /*void OnRotationChanged(Quaternion oldRot, Quaternion newRot)
     {
         // Client-side rotation update
         if (!IsServer)
         {
             transform.rotation = newRot;
         }
-    }
+    }*/
 
     void ConfigureAgent()
     {
@@ -101,7 +101,7 @@ public class EnemyAI : NetworkBehaviour
         agent.autoBraking = false;
         agent.updatePosition = true;
         agent.updateRotation = true;
-        agent.updateUpAxis = false; // Important for preventing Y-axis issues
+        agent.updateUpAxis = false;
     }
 
     IEnumerator InitializeAgent()
@@ -152,15 +152,15 @@ public class EnemyAI : NetworkBehaviour
             }
 
             // Update network variables for clients
-            if (IsServer && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
+            /*if (IsServer && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
             {
                 networkPosition.Value = transform.position;
                 networkRotation.Value = transform.rotation;
-            }
+            }*/
         }
     }
 
-    void SnapToGround()
+    /*void SnapToGround()
     {
         if (!IsServer) return;
 
@@ -182,7 +182,7 @@ public class EnemyAI : NetworkBehaviour
                 agent.Warp(transform.position);
             }
         }
-    }
+    }*/
 
     IEnumerator ChasePlayer(GameObject player)
     {
@@ -298,7 +298,7 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
-    void OnDestroy()
+    new void OnDestroy()
     {
         if (behaviorCoroutine != null)
             StopCoroutine(behaviorCoroutine);
@@ -312,7 +312,7 @@ public class EnemyAI : NetworkBehaviour
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, wanderRadius);
 
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundCheckDistance);
+        /*Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundCheckDistance);*/
     }
 }
