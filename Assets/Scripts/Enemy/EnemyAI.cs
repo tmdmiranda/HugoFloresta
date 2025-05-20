@@ -66,6 +66,12 @@ public class EnemyAI : NetworkBehaviour
 
         // Server-side ground snapping
         SnapToGround();
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
+        {
+            networkPosition.Value = transform.position;
+            networkRotation.Value = transform.rotation;
+        }
     }
 
     void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
