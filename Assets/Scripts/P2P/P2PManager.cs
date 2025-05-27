@@ -138,12 +138,16 @@ public class P2P_Manager : NetworkBehaviour
         Debug.Log("Starting player spawn sequence...");
         if (!IsServer) yield break;
 
-        // Wait until NetworkManager is ready
-        while (NetworkManager.Singleton == null ||
-               NetworkManager.Singleton.SpawnManager == null)
+        // Ensure prefab is registered
+        RegisterPlayerPrefab();
+        if (!isPlayerPrefabRegistered)
         {
-            yield return null;
+            Debug.LogError("Cannot spawn players - prefab not registered!");
+            yield break;
         }
+
+        // Wait an additional frame to ensure everything is ready
+        yield return null;
 
         var clients = new List<ulong>(NetworkManager.Singleton.ConnectedClientsIds);
         clients.Sort();
@@ -155,7 +159,8 @@ public class P2P_Manager : NetworkBehaviour
             ulong clientId = clients[i];
 
             // Skip if player already exists
-            if (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId) != null)
+            if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) &&
+                client.PlayerObject != null)
             {
                 Debug.Log($"Player already exists for client {clientId}, skipping spawn.");
                 continue;
@@ -164,6 +169,8 @@ public class P2P_Manager : NetworkBehaviour
             Debug.Log($"Spawning player for client {clientId} ({i + 1}/{clients.Count})");
 
             Vector3 spawnPos = new Vector3(915f, 50f, 418f);
+
+            // In SpawnPlayersOneByOne(), change the instantiation:
             GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
 
@@ -173,20 +180,16 @@ public class P2P_Manager : NetworkBehaviour
                 continue;
             }
 
-            netObj.SpawnWithOwnership(clientId, true);
-
-            // Wait until player is fully spawned
-            while (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId) == null)
-            {
-                yield return null;
-            }
-
+            netObj.SpawnWithOwnership(clientId, true); // true = destroy with owner
             Debug.Log($"Successfully spawned player for client {clientId}");
-            yield return new WaitForSeconds(0.5f);
+
+            yield return new WaitForSeconds(0.5f); // Reduced delay between spawns
         }
 
         Debug.Log("Finished spawning all players");
     }
+
+
 
 
     public override void OnNetworkSpawn()
