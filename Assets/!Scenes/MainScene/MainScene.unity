@@ -197,6 +197,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 167882368}
     - target: {fileID: 2060787186498966107, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
+      propertyPath: playerCameraY
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060787186498966107, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
       propertyPath: steeringWheel
       value: 
       objectReference: {fileID: 167882357}
@@ -238,15 +242,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8167707487106843994, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -9.550996
+      value: 911
       objectReference: {fileID: 0}
     - target: {fileID: 8167707487106843994, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.9929976
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 8167707487106843994, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5.6596255
+      value: 423
       objectReference: {fileID: 0}
     - target: {fileID: 8167707487106843994, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
       propertyPath: m_LocalRotation.w
@@ -279,16 +283,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5177096077908297589, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1161924283}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
---- !u!1 &167882356 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5177096077908297589, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
-  m_PrefabInstance: {fileID: 167882355}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &167882357 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4444232600232464028, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
@@ -3088,39 +3084,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 45b78f9e0b54fd7b4be7caf82a9a3d15, type: 3}
---- !u!114 &1161924283
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 167882356}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dbe6f99870c32f246b075c0bd56b728e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  playerInsideCar: 0
-  player: {fileID: 0}
-  driverSeat: {fileID: 0}
-  exitPoint: {fileID: 0}
-  carCamera: {fileID: 0}
-  playerCameraY: {fileID: 0}
-  playerCameraX: {fileID: 0}
-  motorForce: 1000
-  breakForce: 3000
-  maxSteerAngle: 40
-  frontLeftWheelCollider: {fileID: 0}
-  frontRightWheelCollider: {fileID: 0}
-  rearLeftWheelCollider: {fileID: 0}
-  rearRightWheelCollider: {fileID: 0}
-  frontLeftWheelTransform: {fileID: 0}
-  frontRightWheelTransform: {fileID: 0}
-  rearLeftWheelTransform: {fileID: 0}
-  rearRightWheelTransform: {fileID: 0}
-  steeringWheel: {fileID: 0}
-  steeringWheelMaxRotation: 180
 --- !u!1 &1249347285 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 22b68ee57bb74704f87e244029e08081, type: 3}

@@ -1045,9 +1045,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   playerInsideCar: 0
+  player: {fileID: 0}
   driverSeat: {fileID: 0}
   exitPoint: {fileID: 0}
   carCamera: {fileID: 0}
+  playerCameraY: {fileID: 0}
+  playerCameraX: {fileID: 0}
   motorForce: 1000
   breakForce: 3000
   maxSteerAngle: 40
