@@ -965,7 +965,7 @@ Transform:
   m_GameObject: {fileID: 5177096077908297589}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -9.550996, y: 0.9929976, z: -5.6596255}
+  m_LocalPosition: {x: -9.550996, y: 0.9929976, z: -6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1046,23 +1046,23 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   playerInsideCar: 0
   player: {fileID: 0}
-  driverSeat: {fileID: 0}
-  exitPoint: {fileID: 0}
-  carCamera: {fileID: 0}
+  driverSeat: {fileID: 7197664036513208044}
+  exitPoint: {fileID: 3901534374740295967}
+  carCamera: {fileID: 195859061851118565}
   playerCameraY: {fileID: 0}
   playerCameraX: {fileID: 0}
   motorForce: 1000
   breakForce: 3000
   maxSteerAngle: 40
-  frontLeftWheelCollider: {fileID: 0}
-  frontRightWheelCollider: {fileID: 0}
-  rearLeftWheelCollider: {fileID: 0}
-  rearRightWheelCollider: {fileID: 0}
-  frontLeftWheelTransform: {fileID: 0}
-  frontRightWheelTransform: {fileID: 0}
-  rearLeftWheelTransform: {fileID: 0}
-  rearRightWheelTransform: {fileID: 0}
-  steeringWheel: {fileID: 0}
+  frontLeftWheelCollider: {fileID: 8225159121879187003}
+  frontRightWheelCollider: {fileID: 8648556776687876005}
+  rearLeftWheelCollider: {fileID: 7249496137958835467}
+  rearRightWheelCollider: {fileID: 6739741325867773832}
+  frontLeftWheelTransform: {fileID: 6575015867931217308}
+  frontRightWheelTransform: {fileID: 5544754338783415000}
+  rearLeftWheelTransform: {fileID: 3191573779800608578}
+  rearRightWheelTransform: {fileID: 6892464340971634033}
+  steeringWheel: {fileID: 4444232600232464028}
   steeringWheelMaxRotation: 180
 --- !u!114 &1672775038680668300
 MonoBehaviour:
