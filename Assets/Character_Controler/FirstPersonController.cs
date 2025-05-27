@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
-public class FirstPersonController : MonoBehaviour
+public class FirstPersonController : NetworkBehaviour
 {
     [Header("Player Status")]
     [SerializeField] public bool playerCanMove = true;
@@ -111,25 +112,30 @@ public class FirstPersonController : MonoBehaviour
 
     private void HandleCrouching()
     {
-        if (playerInputHandler.CrouchTriggered)
-        {
-            characterController.height = 1f;
-            characterController.center = new Vector3(0, -0.5f, 0);
-            mainCamera.transform.localPosition = new Vector3(0, 0, 0);
 
-            //Transform Body
-            playerBody.localPosition = new Vector3(0, -0.5f, 0);
-            playerBody.localScale = new Vector3(1, 0.5f, 1);
-        }
-        else
+        if (IsOwner)
         {
-            characterController.height = 2f;
-            characterController.center = new Vector3(0, 0, 0);
-            mainCamera.transform.localPosition = new Vector3(0, 0.7f, 0);
+            if (playerInputHandler.CrouchTriggered)
+            {
 
-            //Transform Body
-            playerBody.localPosition = new Vector3(0, 0, 0);
-            playerBody.localScale = new Vector3(1, 1, 1);
+                characterController.height = 1f;
+                characterController.center = new Vector3(0, -0.5f, 0);
+                mainCamera.transform.localPosition = new Vector3(0, 0, 0);
+
+                //Transform Body
+                playerBody.localPosition = new Vector3(0, -0.5f, 0);
+                playerBody.localScale = new Vector3(1, 0.5f, 1);
+            }
+            else
+            {
+                characterController.height = 2f;
+                characterController.center = new Vector3(0, 0, 0);
+                mainCamera.transform.localPosition = new Vector3(0, 0.7f, 0);
+
+                //Transform Body
+                playerBody.localPosition = new Vector3(0, 0, 0);
+                playerBody.localScale = new Vector3(1, 1, 1);
+            }
         }
     }
 }

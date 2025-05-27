@@ -40,7 +40,7 @@ public class P2P_Manager : NetworkBehaviour
     private NetworkList<PlayerLobbyData> playerData;
     private GameObject lobbyPanelInstance;
 
-    private GameObject vanPrefab;
+    [SerializeField] GameObject vanPrefab;
 
     public struct PlayerLobbyData : INetworkSerializable, IEquatable<PlayerLobbyData>
     {
@@ -196,7 +196,6 @@ public class P2P_Manager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        vanPrefab = Resources.Load<GameObject>("VanPrefab");
         if (vanPrefab == null)
         {
             Debug.LogError("Van prefab not found in Resources!");
