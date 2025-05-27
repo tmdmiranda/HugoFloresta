@@ -34,12 +34,35 @@ public class FirstPersonController : NetworkBehaviour
     private float verticalRotation;
     private float CurrentSpeed => walkSpeed * (playerInputHandler.SprintTriggered ? sprintMultiplier : 1);
 
+    [Header("Crouch Parameters")]
+    [SerializeField] private float crouchHeight = 1f;
+    [SerializeField] private float standHeight = 2f;
+    [SerializeField] private Vector3 crouchCenter = new Vector3(0, -0.5f, 0);
+    [SerializeField] private Vector3 standCenter = Vector3.zero;
+    [SerializeField] private Vector3 crouchCameraPosition = Vector3.zero;
+    [SerializeField] private Vector3 standCameraPosition = new Vector3(0, 0.7f, 0);
+    [SerializeField] private Vector3 crouchBodyScale = new Vector3(1, 0.5f, 1);
+
+    // Networked crouch state
+    private NetworkVariable<bool> isCrouching = new NetworkVariable<bool>(false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner);
+
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        isCrouching.OnValueChanged += OnCrouchStateChanged;
     }
 
+    private void OnCrouchStateChanged(bool wasCrouching, bool isNowCrouching)
+    {
+        if (!IsOwner)
+        {
+            ApplyCrouchState(isNowCrouching);
+        }
+    }
     void Update()
     {
         if (playerCanLookAround == true)
@@ -112,30 +135,38 @@ public class FirstPersonController : NetworkBehaviour
 
     private void HandleCrouching()
     {
+        if (!IsOwner) return;
 
-        if (IsOwner)
+        if (playerInputHandler.CrouchTriggered)
         {
-            if (playerInputHandler.CrouchTriggered)
-            {
+            // Toggle crouch state
+            bool newCrouchState = !isCrouching.Value;
+            isCrouching.Value = newCrouchState;
 
-                characterController.height = 1f;
-                characterController.center = new Vector3(0, -0.5f, 0);
-                mainCamera.transform.localPosition = new Vector3(0, 0, 0);
+            // Apply locally immediately (network sync will handle other clients)
+            ApplyCrouchState(newCrouchState);
+        }
+    }
 
-                //Transform Body
-                playerBody.localPosition = new Vector3(0, -0.5f, 0);
-                playerBody.localScale = new Vector3(1, 0.5f, 1);
-            }
-            else
-            {
-                characterController.height = 2f;
-                characterController.center = new Vector3(0, 0, 0);
-                mainCamera.transform.localPosition = new Vector3(0, 0.7f, 0);
-
-                //Transform Body
-                playerBody.localPosition = new Vector3(0, 0, 0);
-                playerBody.localScale = new Vector3(1, 1, 1);
-            }
+    private void ApplyCrouchState(bool shouldCrouch)
+    {
+        if (shouldCrouch)
+        {
+            // Crouch setup
+            characterController.height = crouchHeight;
+            characterController.center = crouchCenter;
+            mainCamera.transform.localPosition = crouchCameraPosition;
+            playerBody.localScale = crouchBodyScale;
+            playerBody.localPosition = crouchCenter;
+        }
+        else
+        {
+            // Stand setup
+            characterController.height = standHeight;
+            characterController.center = standCenter;
+            mainCamera.transform.localPosition = standCameraPosition;
+            playerBody.localScale = Vector3.one;
+            playerBody.localPosition = Vector3.zero;
         }
     }
 }
