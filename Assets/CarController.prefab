@@ -946,6 +946,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8167707487106843994}
   - component: {fileID: 7276805424069272959}
+  - component: {fileID: 1934399643621883875}
   - component: {fileID: 2060787186498966107}
   - component: {fileID: 1672775038680668300}
   m_Layer: 0
@@ -1005,6 +1006,31 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1934399643621883875
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5177096077908297589}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 1041240911
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &2060787186498966107
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1017,25 +1043,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbe6f99870c32f246b075c0bd56b728e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   playerInsideCar: 0
-  player: {fileID: 0}
-  driverSeat: {fileID: 7197664036513208044}
-  exitPoint: {fileID: 3901534374740295967}
-  carCamera: {fileID: 7197664036513208044}
-  playerCameraY: {fileID: 0}
-  playerCameraX: {fileID: 0}
+  driverSeat: {fileID: 0}
+  exitPoint: {fileID: 0}
+  carCamera: {fileID: 0}
   motorForce: 1000
   breakForce: 3000
   maxSteerAngle: 40
-  frontLeftWheelCollider: {fileID: 8225159121879187003}
-  frontRightWheelCollider: {fileID: 8648556776687876005}
-  rearLeftWheelCollider: {fileID: 7249496137958835467}
-  rearRightWheelCollider: {fileID: 6739741325867773832}
-  frontLeftWheelTransform: {fileID: 6575015867931217308}
-  frontRightWheelTransform: {fileID: 5544754338783415000}
-  rearLeftWheelTransform: {fileID: 2543998892467853870}
-  rearRightWheelTransform: {fileID: 6892464340971634033}
-  steeringWheel: {fileID: 4444232600232464028}
+  frontLeftWheelCollider: {fileID: 0}
+  frontRightWheelCollider: {fileID: 0}
+  rearLeftWheelCollider: {fileID: 0}
+  rearRightWheelCollider: {fileID: 0}
+  frontLeftWheelTransform: {fileID: 0}
+  frontRightWheelTransform: {fileID: 0}
+  rearLeftWheelTransform: {fileID: 0}
+  rearRightWheelTransform: {fileID: 0}
+  steeringWheel: {fileID: 0}
   steeringWheelMaxRotation: 180
 --- !u!114 &1672775038680668300
 MonoBehaviour:

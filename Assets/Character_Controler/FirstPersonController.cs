@@ -20,6 +20,9 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float mouseSensitivity = 0.1f;
     [SerializeField] private float upDownLookRange = 80f;
 
+    [Header("Utility Parameters")]
+    [SerializeField] private bool canUseHandBob = true;
+
     [Header("References")]
     [SerializeField] private CharacterController characterController;
     [SerializeField] private Camera mainCamera;

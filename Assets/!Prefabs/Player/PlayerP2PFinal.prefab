@@ -290,6 +290,7 @@ GameObject:
   - component: {fileID: -7261893497329658280}
   - component: {fileID: 497777071144753403}
   - component: {fileID: 6365927622199184313}
+  - component: {fileID: 8347653169245925307}
   m_Layer: 0
   m_Name: PlayerP2PFinal
   m_TagString: Player
@@ -455,3 +456,24 @@ MonoBehaviour:
   playerCamera: {fileID: 5836793228511005750}
   audioListener: {fileID: 2391371082755190488}
   characterController: {fileID: 2762749689487475004}
+--- !u!65 &8347653169245925307
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7591108086318982121}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 4, y: 4, z: 4}
+  m_Center: {x: 0, y: 0, z: 0}
