@@ -40,6 +40,8 @@ public class P2P_Manager : NetworkBehaviour
     private NetworkList<PlayerLobbyData> playerData;
     private GameObject lobbyPanelInstance;
 
+    private GameObject vanPrefab;
+
     public struct PlayerLobbyData : INetworkSerializable, IEquatable<PlayerLobbyData>
     {
         public ulong clientId;
@@ -187,8 +189,33 @@ public class P2P_Manager : NetworkBehaviour
         }
 
         Debug.Log("Finished spawning all players");
+        SpawnVan();
     }
 
+    public void SpawnVan()
+    {
+        if (!IsServer) return;
+
+        vanPrefab = Resources.Load<GameObject>("VanPrefab");
+        if (vanPrefab == null)
+        {
+            Debug.LogError("Van prefab not found in Resources!");
+            return;
+        }
+
+        Vector3 spawnPos = new Vector3(915f, 4f, 423f);
+        GameObject van = Instantiate(vanPrefab, spawnPos, Quaternion.identity);
+        NetworkObject vanNetObj = van.GetComponent<NetworkObject>();
+
+        if (vanNetObj == null)
+        {
+            Debug.LogError("Van prefab is missing NetworkObject component!");
+            return;
+        }
+
+        vanNetObj.Spawn();
+        Debug.Log("Van spawned successfully");
+    }
 
 
 
