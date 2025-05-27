@@ -39,7 +39,7 @@ public class P2P_Manager : NetworkBehaviour
     private UnityTransport transport;
     private NetworkList<PlayerLobbyData> playerData;
     private GameObject lobbyPanelInstance;
-    private EnemySpawner enemySpawner;
+    [SerializeField] private EnemySpawner enemySpawner;
 
     [SerializeField] GameObject vanPrefab;
 
