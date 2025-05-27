@@ -1668,6 +1668,7 @@ GameObject:
   - component: {fileID: 2051217695}
   - component: {fileID: 2051217694}
   - component: {fileID: 2051217698}
+  - component: {fileID: 2051217699}
   m_Layer: 0
   m_Name: 'Manager '
   m_TagString: Untagged
@@ -1758,6 +1759,27 @@ MonoBehaviour:
   lobbyPrefab: {fileID: 832731032004663857, guid: 1da34cfdfaa58634cbeac59c7d45fb7b, type: 3}
   canvas: {fileID: 1982547664}
   startingMenuPrefab: {fileID: 0}
+--- !u!114 &2051217699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2051217691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df5fa11a879fb8e47a68531e7f1ccbf7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  enemyPrefab: {fileID: 8295708178410869919, guid: 8f716cc23fd7093479aa62d1e1357384, type: 3}
+  numberOfEnemies: 100
+  spawnRadius: 3000
+  minDistanceBetweenEnemies: 100
+  spawnLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  navMeshSampleRange: 10
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
