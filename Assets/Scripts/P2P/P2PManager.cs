@@ -39,6 +39,7 @@ public class P2P_Manager : NetworkBehaviour
     private UnityTransport transport;
     private NetworkList<PlayerLobbyData> playerData;
     private GameObject lobbyPanelInstance;
+    private EnemySpawner enemySpawner;
 
     [SerializeField] GameObject vanPrefab;
 
@@ -117,6 +118,7 @@ public class P2P_Manager : NetworkBehaviour
         transport.SetConnectionData("0.0.0.0", port);
 
         RegisterPlayerPrefab();
+
     }
     public void StartGame()
     {
@@ -190,6 +192,8 @@ public class P2P_Manager : NetworkBehaviour
 
         Debug.Log("Finished spawning all players");
         SpawnVan();
+        enemySpawner.OnPDiddySpawn();
+
     }
 
     public void SpawnVan()

@@ -12,7 +12,7 @@ public class EnemySpawner : NetworkBehaviour
     public LayerMask spawnLayerMask;
     public float navMeshSampleRange = 10f;
 
-    public override void OnNetworkSpawn()
+    public void OnPDiddySpawn()
     {
         if (!IsServer) return;
         
