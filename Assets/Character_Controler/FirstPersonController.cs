@@ -49,17 +49,31 @@ public class FirstPersonController : NetworkBehaviour
             mainCamera.enabled = false;
             mainCamera.GetComponent<AudioListener>().enabled = false;
         }
+
+        // Subscribe to crouch state changes
+        isCrouchingNetwork.OnValueChanged += OnCrouchStateChanged;
+    }
+
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+        isCrouchingNetwork.OnValueChanged -= OnCrouchStateChanged;
+    }
+
+    private void OnCrouchStateChanged(bool previousValue, bool newValue)
+    {
+        ApplyCrouchState(newValue);
     }
 
     void Update()
     {
         if (!IsOwner) return;
 
-        if (playerCanLookAround == true)
+        if (playerCanLookAround)
         {
             HandleRotation();
         }
-        if (playerCanMove == true)
+        if (playerCanMove)
         {
             HandleMovement();
             HandleCrouching();
@@ -122,29 +136,27 @@ public class FirstPersonController : NetworkBehaviour
 
     private void HandleCrouching()
     {
-        if (playerInputHandler.CrouchTriggered)
+        if (playerInputHandler.CrouchTriggered != isCrouchingNetwork.Value)
         {
-            SetCrouchStateServerRpc(true);
+            SetCrouchStateServerRpc(playerInputHandler.CrouchTriggered);
         }
-        else
-        {
-            SetCrouchStateServerRpc(false);
-        }
-        
-        ApplyCrouchState(isCrouchingNetwork.Value);
     }
 
     private void ApplyCrouchState(bool shouldCrouch)
     {
+        if (characterController == null) return;
+
         if (shouldCrouch)
         {
             characterController.height = 1f;
             characterController.center = new Vector3(0, -0.5f, 0);
             mainCamera.transform.localPosition = new Vector3(0, 0, 0);
 
-            //Transform Body
-            playerBody.localPosition = new Vector3(0, -0.5f, 0);
-            playerBody.localScale = new Vector3(1, 0.5f, 1);
+            if (playerBody != null)
+            {
+                playerBody.localPosition = new Vector3(0, -0.5f, 0);
+                playerBody.localScale = new Vector3(1, 0.5f, 1);
+            }
         }
         else
         {
@@ -152,9 +164,11 @@ public class FirstPersonController : NetworkBehaviour
             characterController.center = new Vector3(0, 0, 0);
             mainCamera.transform.localPosition = new Vector3(0, 0.7f, 0);
 
-            //Transform Body
-            playerBody.localPosition = new Vector3(0, 0, 0);
-            playerBody.localScale = new Vector3(1, 1, 1);
+            if (playerBody != null)
+            {
+                playerBody.localPosition = new Vector3(0, 0, 0);
+                playerBody.localScale = new Vector3(1, 1, 1);
+            }
         }
     }
 
