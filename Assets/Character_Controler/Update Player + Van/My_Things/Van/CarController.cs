@@ -1,226 +1,263 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-public class NetworkedCarController : NetworkBehaviour
+public class CarController : NetworkBehaviour
 {
-    [Header("Car Settings")]
-    [SerializeField] private float motorForce = 2000f;
-    [SerializeField] private float breakForce = 3000f;
-    [SerializeField] private float maxSteerAngle = 30f;
+    private float horizontalInput, verticalInput;
+    private float currentSteerAngle, currentbreakForce;
+    private bool isBreaking;
 
-    [Header("Seats")]
-    [SerializeField] private Transform driverSeat;
-    [SerializeField] private Transform[] passengerSeats;
-    [SerializeField] private Transform exitPoint;
+    private bool isColiding;
+    public bool playerInsideCar = false;
+
+    public GameObject player;
+
+    private CarInputHandler carInputHandler;
+
+    [Header("Drive Settings")]
+    private bool isTransiting;
+    [SerializeField] public Transform driverSeat;
+    [SerializeField] public Transform exitPoint;
+    private float transitionSpeed = 0.1f;
+    [SerializeField] public Transform carCamera;
+    [SerializeField] public Transform playerCameraY;
+    [SerializeField] public Transform playerCameraX;
+
+    [Header("Car Settings")]
+    [SerializeField] private float motorForce;
+    [SerializeField] private float breakForce;
+    [SerializeField] private float maxSteerAngle;
 
     [Header("Wheel Colliders")]
-    [SerializeField] private WheelCollider[] wheelColliders;
+    [SerializeField] private WheelCollider frontLeftWheelCollider;
+    [SerializeField] private WheelCollider frontRightWheelCollider;
+    [SerializeField] private WheelCollider rearLeftWheelCollider;
+    [SerializeField] private WheelCollider rearRightWheelCollider;
 
-    [Header("References")]
+    [Header("Wheels")]
+    [SerializeField] private Transform frontLeftWheelTransform;
+    [SerializeField] private Transform frontRightWheelTransform;
+    [SerializeField] private Transform rearLeftWheelTransform;
+    [SerializeField] private Transform rearRightWheelTransform;
+
+    [Header("Steering Wheel")]
     [SerializeField] private Transform steeringWheel;
     [SerializeField] private float steeringWheelMaxRotation = 180f;
 
-    private NetworkVariable<ulong> driverId = new NetworkVariable<ulong>(ulong.MaxValue);
-    private NetworkList<ulong> passengerIds = new NetworkList<ulong>();
     private Rigidbody rb;
-
-    private float horizontalInput, verticalInput;
-    private bool isBreaking;
 
     private void Awake()
     {
+        carInputHandler = GetComponent<CarInputHandler>();
+
+        //baixa o centro de massa do carro para nao capotar
         rb = GetComponent<Rigidbody>();
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
     }
 
-    public override void OnNetworkSpawn()
-    {
-        if (IsServer)
-        {
-            driverId.Value = ulong.MaxValue;
-            passengerIds.Clear();
-        }
-    }
 
     private void OnTriggerEnter(Collider other)
     {
         if (!IsServer) return;
-
-        if (other.CompareTag("Player") && other.TryGetComponent<NetworkObject>(out var playerNetObj))
+        if (other.CompareTag("Player"))
         {
-            TryEnterVehicle(playerNetObj);
+            isColiding = true;
+            player = other.gameObject;
+            playerCameraY = player.GetComponentInChildren<Camera>().gameObject.transform;
+            playerCameraX = player.GetComponentInChildren<Camera>().gameObject.transform;
         }
     }
-
-    private void TryEnterVehicle(NetworkObject playerNetObj)
+    private void OnTriggerExit(Collider other)
     {
-        // If no driver, assign as driver
-        if (driverId.Value == ulong.MaxValue)
+        if (other.CompareTag("Player"))
         {
-            AssignDriver(playerNetObj);
-        }
-        // Otherwise assign as passenger if seats available
-        else if (passengerIds.Count < passengerSeats.Length)
-        {
-            AssignPassenger(playerNetObj);
+            isColiding = false;
         }
     }
-
-    private void AssignDriver(NetworkObject playerNetObj)
+    private IEnumerator FindPlayerWithDelay(float delay)
     {
-        driverId.Value = playerNetObj.NetworkObjectId;
-        UpdatePlayerPositionClientRpc(playerNetObj.NetworkObjectId, 0);
-    }
+        yield return new WaitForSeconds(delay); // Wait for 'delay' seconds
 
-    private void AssignPassenger(NetworkObject playerNetObj)
-    {
-        passengerIds.Add(playerNetObj.NetworkObjectId);
-        int seatIndex = passengerIds.Count - 1;
-        UpdatePlayerPositionClientRpc(playerNetObj.NetworkObjectId, seatIndex + 1);
-    }
-
-    [ClientRpc]
-    private void UpdatePlayerPositionClientRpc(ulong playerId, int seatIndex)
-    {
-        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(playerId, out var playerNetObj))
+        player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
         {
-            Transform targetSeat = seatIndex == 0 ? driverSeat : passengerSeats[seatIndex - 1];
-            
-            playerNetObj.transform.SetParent(targetSeat);
-            playerNetObj.transform.localPosition = Vector3.zero;
-            playerNetObj.transform.localRotation = Quaternion.identity;
-            
-            // Disable player controller
-            if (playerNetObj.TryGetComponent<CharacterController>(out var cc))
-                cc.enabled = false;
-            
-            if (playerNetObj.TryGetComponent<FirstPersonController>(out var fpc))
-                fpc.playerCanMove = false;
+            Debug.LogError("Player not found! Make sure the player has the 'Player' tag.");
         }
+
+        playerCameraY = player.GetComponentInChildren<Camera>().gameObject.transform;
+        playerCameraX = player.GetComponentInChildren<Camera>().gameObject.transform;
+
+
     }
 
     private void FixedUpdate()
     {
-        if (IsOwner)
-        {
-            GetInput();
-            HandleMotor();
-            HandleSteering();
-            UpdateWheels();
-        }
+        GetInput();
+        HandleMotor();
+        HandleSteering();
+        UpdateWheels();
+        UpdateSteeringWheel();
     }
 
+    private void EnterCar()
+    {
+        player.GetComponent<CharacterController>().enabled = false;
+        player.GetComponent<FirstPersonController>().playerCanMove = false;
+
+        // Smoothly move and rotate the player
+        player.transform.position = Vector3.MoveTowards(player.transform.position, driverSeat.position, 0.2f);
+        player.transform.rotation = Quaternion.RotateTowards(player.transform.rotation, driverSeat.rotation, 0.2f);
+
+        // Check if close enough to the target
+        if (Vector3.Distance(player.transform.position, driverSeat.position) < 0.01f)
+        {
+            player.transform.position = driverSeat.position; // Snap to position
+            player.transform.rotation = driverSeat.rotation; // Snap to rotation
+            isTransiting = false;
+            playerInsideCar = true;
+        }
+    }
     private void GetInput()
     {
-        if (driverId.Value == NetworkManager.LocalClientId)
+        if (playerInsideCar == true)
         {
-            // Get input only if local player is the driver
-            horizontalInput = Input.GetAxis("Horizontal");
-            verticalInput = Input.GetAxis("Vertical");
-            isBreaking = Input.GetKey(KeyCode.Space);
-        }
-        else
-        {
-            // Reset inputs if not driver
-            horizontalInput = 0f;
-            verticalInput = 0f;
-            isBreaking = false;
+            horizontalInput = carInputHandler.SteerInput;
+            verticalInput = carInputHandler.AccelerateInput;
+            isBreaking = carInputHandler.BrakeInput;
         }
     }
 
     private void HandleMotor()
     {
-        foreach (var wheel in wheelColliders)
-        {
-            wheel.motorTorque = verticalInput * motorForce;
-            wheel.brakeTorque = isBreaking ? breakForce : 0f;
-        }
+        frontLeftWheelCollider.motorTorque = verticalInput * motorForce;
+        frontRightWheelCollider.motorTorque = verticalInput * motorForce;
+        currentbreakForce = isBreaking ? breakForce : 0f;
+        ApplyBreaking();
+    }
+
+    private void ApplyBreaking()
+    {
+        frontRightWheelCollider.brakeTorque = currentbreakForce;
+        frontLeftWheelCollider.brakeTorque = currentbreakForce;
+        rearLeftWheelCollider.brakeTorque = currentbreakForce;
+        rearRightWheelCollider.brakeTorque = currentbreakForce;
     }
 
     private void HandleSteering()
     {
-        float steerAngle = maxSteerAngle * horizontalInput;
-        wheelColliders[0].steerAngle = steerAngle; // Front left
-        wheelColliders[1].steerAngle = steerAngle; // Front right
-        
-        if (steeringWheel != null)
-        {
-            steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -steerAngle * (steeringWheelMaxRotation / maxSteerAngle));
-        }
+        currentSteerAngle = maxSteerAngle * horizontalInput;
+        frontLeftWheelCollider.steerAngle = currentSteerAngle;
+        frontRightWheelCollider.steerAngle = currentSteerAngle;
     }
 
     private void UpdateWheels()
     {
-        foreach (var wheel in wheelColliders)
-        {
-            if (wheel.transform.childCount > 0)
-            {
-                wheel.GetWorldPose(out var pos, out var rot);
-                wheel.transform.GetChild(0).position = pos;
-                wheel.transform.GetChild(0).rotation = rot;
-            }
-        }
+        UpdateSingleWheel(frontLeftWheelCollider, frontLeftWheelTransform);
+        UpdateSingleWheel(frontRightWheelCollider, frontRightWheelTransform);
+        UpdateSingleWheel(rearRightWheelCollider, rearRightWheelTransform);
+        UpdateSingleWheel(rearLeftWheelCollider, rearLeftWheelTransform);
+    }
+
+    private void UpdateSingleWheel(WheelCollider wheelCollider, Transform wheelTransform)
+    {
+        Vector3 pos;
+        Quaternion rot;
+        wheelCollider.GetWorldPose(out pos, out rot);
+        wheelTransform.rotation = rot;
+        wheelTransform.position = pos;
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.E) && IsOwner)
+        if (Input.GetKeyDown(KeyCode.E))
         {
-            if (driverId.Value == NetworkManager.LocalClientId)
-            {
-                ExitVehicleServerRpc(NetworkManager.LocalClientId);
-            }
+            if (isColiding)
+                isTransiting = true;
+
         }
 
-        if (Input.GetKeyDown(KeyCode.F) && IsOwner)
+        if (Input.GetKeyDown(KeyCode.F))
         {
-            FlipVehicleServerRpc();
+            VanFlip();
         }
-    }
 
-    [ServerRpc(RequireOwnership = false)]
-    private void ExitVehicleServerRpc(ulong playerId)
-    {
-        if (driverId.Value == playerId)
+        if (isTransiting)
         {
-            ExitVehicle(playerId, 0);
-            driverId.Value = ulong.MaxValue;
+            if (playerInsideCar) ExitCar();
+            else EnterCar();
         }
-        else if (passengerIds.Contains(playerId))
+
+        if (playerInsideCar)
         {
-            ExitVehicle(playerId, passengerIds.IndexOf(playerId) + 1);
-            passengerIds.Remove(playerId);
+            player.transform.position = driverSeat.position;
+            carCameraLocker();
         }
     }
 
-    private void ExitVehicle(ulong playerId, int seatIndex)
+    private void carCameraLocker()
     {
-        ExitVehicleClientRpc(playerId, seatIndex);
-    }
-
-    [ClientRpc]
-    private void ExitVehicleClientRpc(ulong playerId, int seatIndex)
-    {
-        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(playerId, out var playerNetObj))
+        if (playerInsideCar)
         {
-            playerNetObj.transform.SetParent(null);
-            playerNetObj.transform.position = exitPoint.position;
-            playerNetObj.transform.rotation = exitPoint.rotation;
-            
-            // Re-enable player controller
-            if (playerNetObj.TryGetComponent<CharacterController>(out var cc))
-                cc.enabled = true;
-            
-            if (playerNetObj.TryGetComponent<FirstPersonController>(out var fpc))
-                fpc.playerCanMove = true;
+            Vector3 carEulerAngles = carCamera.rotation.eulerAngles;
+            Vector3 cameraEulerAngles = playerCameraY.localEulerAngles;
+
+            if (cameraEulerAngles.y > 180f) cameraEulerAngles.y -= 360f;
+            if (carEulerAngles.y > 180f) carEulerAngles.y -= 360f;
+
+            float cameraYRelativeToCar = Mathf.DeltaAngle(carEulerAngles.y, cameraEulerAngles.y);
+            cameraYRelativeToCar = Mathf.Clamp(cameraYRelativeToCar, -90f, 90f);
+
+            float lockedY = carEulerAngles.y + cameraYRelativeToCar;
+            playerCameraY.rotation = Quaternion.Euler(carEulerAngles.x, lockedY, carEulerAngles.z);
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    private void FlipVehicleServerRpc()
+    private void UpdateSteeringWheel()
     {
-        rb.linearVelocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-        transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+        if (playerInsideCar)
+        {
+            float steeringAngle = horizontalInput * steeringWheelMaxRotation;
+            steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -steeringAngle);
+
+        }
+    }
+
+
+
+    private void ExitCar()
+    {
+        //set position
+        player.transform.position = exitPoint.position;
+
+        //set player camera direction in exit
+        playerCameraX.localRotation = Quaternion.Euler(0f, 0f, 0f);
+        playerCameraY.localRotation = Quaternion.Euler(0f, 0f, 0f);
+
+        //enables the player controller
+        player.GetComponent<CharacterController>().enabled = true;
+        player.GetComponent<FirstPersonController>().playerCanMove = true;
+
+        if (player.transform.position == exitPoint.position)
+        {
+            isTransiting = false;
+            playerInsideCar = false;
+        }
+    }
+
+    private void VanFlip()
+    {
+        Vector3 currentEuler = transform.eulerAngles;
+        transform.eulerAngles = new Vector3(0f, currentEuler.y, 0f);
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
     }
 }
