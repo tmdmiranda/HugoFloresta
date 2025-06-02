@@ -4,24 +4,30 @@ using UnityEngine;
 public class VoiceReceiver : MonoBehaviour
 {
     private AudioSource audioSource;
+    private AudioClip currentClip;
+    private int samplePos;
+    private float[] sampleBuffer = new float[2048];
 
     private void Awake()
     {
         audioSource = GetComponent<AudioSource>();
-        audioSource.loop = false;
-        audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f; // 3D audio
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
     }
 
-    public void PlayClip(float[] data)
+    public void PlayVoiceClip(float[] samples, int frequency)
     {
-        if (data == null || data.Length == 0) return;
+        if (samples == null || samples.Length == 0) return;
 
-        AudioClip clip = AudioClip.Create("VoiceClip", data.Length, 1, 16000, false);
-        clip.SetData(data, 0);
+        // Create or update clip
+        if (currentClip == null || currentClip.frequency != frequency)
+        {
+            currentClip = AudioClip.Create("VoiceClip", samples.Length, 1, frequency, false);
+        }
 
-        Debug.Log($"[VoiceReceiver] Playing received audio clip ({data.Length} samples)");
-        audioSource.clip = clip;
+        currentClip.SetData(samples, 0);
+        audioSource.clip = currentClip;
         audioSource.Play();
     }
 }
