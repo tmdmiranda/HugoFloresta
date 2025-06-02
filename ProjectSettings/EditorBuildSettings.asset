@@ -24,7 +24,7 @@ EditorBuildSettings:
     path: Assets/!Scenes/GONCAVF_AI_P2P.unity
     guid: 898c14444b2dbb043ad987a33250fc90
   - enabled: 1
-    path: Assets/!Scenes/MainScene/MainScene.unity
+    path: Assets/!Scenes/MainScene.unity
     guid: 55dee118eecec8e499ccba94e15a26df
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
