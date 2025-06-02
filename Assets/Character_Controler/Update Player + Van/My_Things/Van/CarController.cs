@@ -11,6 +11,21 @@ public class CarController : NetworkBehaviour
     public bool playerInsideCar = false;
     public GameObject player;
 
+    [Header("Camera Settings")]
+    [SerializeField] private float mouseSensitivity = 100f;
+    [SerializeField] private Transform carCamera; // Assign van's camera root
+    [SerializeField] private Transform playerCameraY; // Camera yaw (horizontal)
+    [SerializeField] private Transform playerCameraX; // Camera pitch (vertical)
+    [Header("Camera Follow")]
+    [SerializeField] private float turnFollowDeadzone = 0.1f;
+    [SerializeField] private float maxTurnFollowSpeed = 2f;
+    [SerializeField] private float turnFollowDropoffAngle = 90f;
+    [SerializeField] private float cameraSnapThreshold = 5f;
+    [SerializeField] private float cameraMaxRotation = 90f;
+    [SerializeField] private float cameraSmoothingSpeed = 10f;
+    [SerializeField] private float movementInfluenceZone = 15f;
+    [SerializeField] private float movementInfluenceStrength = 0.5f;
+
     private CarInputHandler carInputHandler;
     private Rigidbody rb;
 
@@ -18,9 +33,7 @@ public class CarController : NetworkBehaviour
     private bool isTransiting;
     [SerializeField] private Transform driverSeat;
     [SerializeField] private Transform exitPoint;
-    [SerializeField] private Transform carCamera;
-    [SerializeField] private Transform playerCameraY;
-    [SerializeField] private Transform playerCameraX;
+
 
     [Header("Car Settings")]
     [SerializeField] private float motorForce;
@@ -121,22 +134,44 @@ public class CarController : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player") && IsOwner)
+        if (!IsOwner) return; // Only run on local player's car
+
+        if (other.CompareTag("Player"))
         {
-            isColiding = true;
-            player = other.gameObject;
-            playerCameraY = player.GetComponentInChildren<Camera>().transform.parent;
-            playerCameraX = player.GetComponentInChildren<Camera>().transform;
+            if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
+            {
+                isColiding = true;
+                player = other.gameObject;
+
+                // Assign Y to player's transform, X to camera's transform
+                var cam = player.GetComponentInChildren<Camera>();
+                if (cam != null)
+                {
+                    playerCameraY = player.transform;   // Y-axis: whole player transform
+                    playerCameraX = cam.transform;      // X-axis: camera's transform
+                }
+                else
+                {
+                    Debug.LogWarning("Camera not found on player entering car trigger.");
+                }
+            }
         }
     }
 
+
     private void OnTriggerExit(Collider other)
     {
+        if (!IsOwner) return;
+
         if (other.CompareTag("Player"))
         {
-            isColiding = false;
+            if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
+            {
+                isColiding = false;
+            }
         }
     }
+
 
     private void Update()
     {
@@ -162,11 +197,40 @@ public class CarController : NetworkBehaviour
 
         if (playerInsideCar)
         {
+            HandleCamera();
             player.transform.position = driverSeat.position;
-            carCameraLocker();
         }
     }
+    [SerializeField] private float rotationSmoothness = 5f;
 
+    private void HandleCamera()
+    {
+        if (!playerInsideCar) return;
+
+        // Parent camera to van if not already
+        if (playerCameraY.parent != carCamera)
+        {
+            playerCameraY.SetParent(carCamera, false);
+            playerCameraY.localPosition = Vector3.zero;
+            playerCameraY.localRotation = Quaternion.identity;
+        }
+
+        // Get vertical input
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+
+        // Calculate target rotation
+        float targetXRotation = playerCameraX.localEulerAngles.x - mouseY;
+        targetXRotation = Mathf.Clamp(targetXRotation, -90f, 90f);
+
+        // Smoothly rotate
+        float smoothedXRotation = Mathf.LerpAngle(
+            playerCameraX.localEulerAngles.x,
+            targetXRotation,
+            rotationSmoothness * Time.deltaTime
+        );
+
+        playerCameraX.localEulerAngles = new Vector3(smoothedXRotation, 0f, 0f);
+    }
     private void EnterCar()
     {
         player.GetComponent<CharacterController>().enabled = false;
@@ -234,20 +298,17 @@ public class CarController : NetworkBehaviour
         wheelTransform.SetPositionAndRotation(pos, rot);
     }
 
-    private void carCameraLocker()
+
+
+    private float NormalizeAngle(float angle)
     {
-        if (!playerInsideCar) return;
-
-        Vector3 carEulerAngles = carCamera.eulerAngles;
-        Vector3 cameraEulerAngles = playerCameraY.localEulerAngles;
-
-        // Normalize angles
-        if (cameraEulerAngles.y > 180f) cameraEulerAngles.y -= 360f;
-        if (carEulerAngles.y > 180f) carEulerAngles.y -= 360f;
-
-        float cameraYRelativeToCar = Mathf.Clamp(Mathf.DeltaAngle(carEulerAngles.y, cameraEulerAngles.y), -90f, 90f);
-        playerCameraY.rotation = Quaternion.Euler(carEulerAngles.x, carEulerAngles.y + cameraYRelativeToCar, carEulerAngles.z);
+        angle %= 360f;
+        if (angle > 180f) angle -= 360f;
+        return angle;
     }
+
+
+
 
     private void UpdateSteeringWheel()
     {
