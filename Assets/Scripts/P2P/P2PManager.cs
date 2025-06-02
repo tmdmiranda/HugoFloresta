@@ -137,12 +137,38 @@ public class P2P_Manager : NetworkBehaviour
     }
 
 
+    // Add this to your P2P_Manager class
+    private string GetPlayerName(ulong clientId)
+    {
+        // First check lobby data
+        foreach (var player in playerData)
+        {
+            if (player.clientId == clientId)
+            {
+                return player.playerName.ToString();
+            }
+        }
+
+        // Then check PlayerDataManager if available
+        if (PlayerDataManager.Instance != null &&
+            PlayerDataManager.Instance.TryGetPlayerName(clientId, out string name))
+        {
+            return name;
+        }
+
+        // Final fallback
+        return $"Player{clientId}";
+    }
+
     private IEnumerator SpawnPlayersOneByOne()
     {
         Debug.Log("Starting player spawn sequence...");
-        if (!IsServer) yield break;
+        if (!IsServer)
+        {
+            Debug.Log("Not server, aborting spawn sequence");
+            yield break;
+        }
 
-        // Ensure prefab is registered
         RegisterPlayerPrefab();
         if (!isPlayerPrefabRegistered)
         {
@@ -150,7 +176,6 @@ public class P2P_Manager : NetworkBehaviour
             yield break;
         }
 
-        // Wait an additional frame to ensure everything is ready
         yield return null;
 
         var clients = new List<ulong>(NetworkManager.Singleton.ConnectedClientsIds);
@@ -161,40 +186,60 @@ public class P2P_Manager : NetworkBehaviour
         for (int i = 0; i < clients.Count; i++)
         {
             ulong clientId = clients[i];
+            Debug.Log($"Processing spawn for client {clientId} ({i + 1}/{clients.Count})");
 
-            // Skip if player already exists
             if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) &&
                 client.PlayerObject != null)
             {
-                Debug.Log($"Player already exists for client {clientId}, skipping spawn.");
+                Debug.Log($"Player already exists for client {clientId}, skipping spawn");
                 continue;
             }
 
-            Debug.Log($"Spawning player for client {clientId} ({i + 1}/{clients.Count})");
-
-            Vector3 spawnPos = new Vector3(915f, 50f, 418f);
-
-            // In SpawnPlayersOneByOne(), change the instantiation:
+            Vector3 spawnPos = CalculateSpawnPosition(i, clients.Count);
             GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
 
             if (netObj == null)
             {
-                Debug.LogError("PlayerPrefab is missing NetworkObject component!");
+                Debug.LogError($"PlayerPrefab is missing NetworkObject component for client {clientId}");
                 continue;
             }
 
-            netObj.SpawnWithOwnership(clientId, true); // true = destroy with owner
-            Debug.Log($"Successfully spawned player for client {clientId}: {netObj}");
+            netObj.SpawnWithOwnership(clientId, true);
 
-            yield return new WaitForSeconds(1f); // Reduced delay between spawns
+            // Set player name
+            string playerName = GetPlayerName(clientId);
+            var uniquePlayer = player.GetComponent<UniquePlayer>();
+            if (uniquePlayer != null)
+            {
+                uniquePlayer.SetPlayerName(playerName);
+            }
+            else
+            {
+                Debug.LogError($"UniquePlayer component missing on player prefab for client {clientId}");
+            }
+
+            Debug.Log($"Successfully spawned player '{playerName}' for client {clientId} at {spawnPos}");
+            yield return new WaitForSeconds(0.5f);
         }
 
         Debug.Log("Finished spawning all players");
         DebugPlayerCount();
         SpawnVan();
-        enemySpawner.OnNetworkSpawn();
+        enemySpawner.OnPDiddySpawn();
+    }
 
+    private Vector3 CalculateSpawnPosition(int index, int totalPlayers)
+    {
+        float radius = 5f;
+        float angle = index * (2f * Mathf.PI / totalPlayers);
+        Vector3 center = new Vector3(915f, 50f, 418f);
+
+        return center + new Vector3(
+            Mathf.Cos(angle) * radius,
+            0f,
+            Mathf.Sin(angle) * radius
+        );
     }
 
     public void SpawnVan()
@@ -207,8 +252,12 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        Vector3 spawnPos = new Vector3(915f, 4f, 423f);
-        GameObject van = Instantiate(vanPrefab, spawnPos, Quaternion.identity);
+        Vector3 spawnPoint = new Vector3(915f, 100f, 423f); // start high
+        if (Physics.Raycast(spawnPoint, Vector3.down, out RaycastHit hit, 200f))
+        {
+            spawnPoint = hit.point + Vector3.up * 0.1f; // just above ground
+        }
+        GameObject van = Instantiate(vanPrefab, spawnPoint, Quaternion.identity);
         NetworkObject vanNetObj = van.GetComponent<NetworkObject>();
 
         if (vanNetObj == null)
@@ -247,8 +296,12 @@ public class P2P_Manager : NetworkBehaviour
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"Client connected: {clientId}");
-        DebugPlayerCount();
-        if (!IsServer) return;
+
+        if (!IsServer)
+        {
+            Debug.Log($"Non-server received connection callback for {clientId}");
+            return;
+        }
 
         if (NetworkManager.Singleton.ConnectedClients.Count > MaxConnections)
         {
@@ -257,19 +310,30 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        Debug.Log($"Processing connection for client {clientId}");
-        if (!IsServer) return;
-
-        if (NetworkManager.Singleton.ConnectedClients.Count > MaxConnections)
+        string playerName;
+        if (clientId == NetworkManager.Singleton.LocalClientId)
         {
-            NetworkManager.Singleton.DisconnectClient(clientId);
-            return;
+            playerName = string.IsNullOrEmpty(nameInputField.text.Trim())
+                ? $"Host{clientId}"
+                : nameInputField.text.Trim();
+        }
+        else
+        {
+            playerName = $"Player{clientId}";
         }
 
+        PlayerDataManager.Instance.RegisterPlayer(clientId, playerName);
+
         if (clientId == NetworkManager.Singleton.LocalClientId)
-            AddPlayerData(clientId, nameInputField.text.Trim());
+        {
+            AddPlayerData(clientId, playerName);
+        }
         else
+        {
             RequestPlayerNameClientRpc(clientId);
+        }
+
+        Debug.Log($"Successfully processed connection for client {clientId}");
     }
 
     //--- Lobby Data Management ---
