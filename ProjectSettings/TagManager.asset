@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - grnd7
+  - Enemy
   layers:
   - Default
   - TransparentFX

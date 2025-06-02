@@ -12,21 +12,21 @@ public class EnemySpawner : NetworkBehaviour
     [Tooltip("Layer mask for collision detection (should include enemy layer)")]
     public LayerMask spawnLayerMask = -1; // Default to everything
     public float navMeshSampleRange = 10f;
-    
+
     [Header("Debug")]
     public bool enableDebugLogs = true;
 
-    public void OnPDiddySpawn()
+    public void OnNetworkSpawn()
     {
         if (!IsServer) return;
-        
-        if (!IsNavMeshReady())  
+
+        if (!IsNavMeshReady())
         {
             Debug.LogError("NavMesh not ready! Check your NavMesh baking.");
             return;
         }
-        
-    SpawnEnemies();
+
+        SpawnEnemies();
     }
 
     private bool IsNavMeshReady()
@@ -37,21 +37,23 @@ public class EnemySpawner : NetworkBehaviour
     private void SpawnEnemies()
     {
         int successfullySpawned = 0;
-        
+        var navMeshData = NavMesh.CalculateTriangulation();
+
         for (int i = 0; i < numberOfEnemies; i++)
         {
             if (enableDebugLogs) Debug.Log($"=== Attempting to spawn enemy {i} ===");
             Vector3 spawnPos = Vector3.zero;
             bool foundPosition = false;
-            
-            for (int attempt = 0; attempt < 50; attempt++)
+
+            // Randomly select a vertex from the NavMesh triangulation
+            int randomIndex = UnityEngine.Random.Range(0, navMeshData.vertices.Length);
+            spawnPos = navMeshData.vertices[randomIndex];
+
+            // Check for collisions with existing enemies
+            bool hasCollision = Physics.CheckSphere(spawnPos, minDistanceBetweenEnemies, spawnLayerMask);
+            if (!hasCollision)
             {
-                spawnPos = FindValidSpawnPosition(attempt);
-                if (spawnPos != Vector3.zero)
-                {
-                    foundPosition = true;
-                    break;
-                }
+                foundPosition = true;
             }
 
             if (foundPosition)
@@ -62,18 +64,19 @@ public class EnemySpawner : NetworkBehaviour
             }
             else
             {
-                Debug.LogWarning($"FAILED to spawn enemy {i} after 50 attempts");
+                Debug.LogWarning($"FAILED to spawn enemy {i} at position {spawnPos}");
             }
         }
-        
+
         Debug.Log($"Spawn summary: {successfullySpawned}/{numberOfEnemies} enemies spawned");
     }
 
-    private Vector3 FindValidSpawnPosition(int attemptNumber)
+
+    /*private Vector3 FindValidSpawnPosition(int attemptNumber)
     {
         // Generate random point in circle
         Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
-        Vector3 randomPoint = transform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
+        Vector3 randomPoint = transform.position + new Vector3(randomCircle.x, 10f, randomCircle.y);
         if (enableDebugLogs) if (enableDebugLogs) Debug.Log($"Attempt {attemptNumber}: Trying point {randomPoint}");
 
         // Find nearest NavMesh position
@@ -85,18 +88,18 @@ public class EnemySpawner : NetworkBehaviour
             bool hasCollision = Physics.CheckSphere(hit.position, minDistanceBetweenEnemies, spawnLayerMask);
             if (enableDebugLogs) if (enableDebugLogs) Debug.Log($"Collision check: {(hasCollision ? "FAILED" : "PASSED")}");
 
-          if (!hasCollision)
-          {
+            if (!hasCollision)
+            {
                 return hit.position;
-          }
+            }
         }
         else
         {
             if (enableDebugLogs) if (enableDebugLogs) Debug.Log("No NavMesh found near this point");
         }
-        
+
         return Vector3.zero;
-    }
+    }*/
 
     private void SpawnSingleEnemy(Vector3 position)
     {

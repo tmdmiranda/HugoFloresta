@@ -185,14 +185,15 @@ public class P2P_Manager : NetworkBehaviour
             }
 
             netObj.SpawnWithOwnership(clientId, true); // true = destroy with owner
-            Debug.Log($"Successfully spawned player for client {clientId}");
+            Debug.Log($"Successfully spawned player for client {clientId}: {netObj}");
 
-            yield return new WaitForSeconds(0.5f); // Reduced delay between spawns
+            yield return new WaitForSeconds(1f); // Reduced delay between spawns
         }
 
         Debug.Log("Finished spawning all players");
+        DebugPlayerCount();
         SpawnVan();
-        enemySpawner.OnPDiddySpawn();
+        enemySpawner.OnNetworkSpawn();
 
     }
 
@@ -246,6 +247,7 @@ public class P2P_Manager : NetworkBehaviour
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"Client connected: {clientId}");
+        DebugPlayerCount();
         if (!IsServer) return;
 
         if (NetworkManager.Singleton.ConnectedClients.Count > MaxConnections)
@@ -467,5 +469,25 @@ public class P2P_Manager : NetworkBehaviour
             }
         }
         catch { return "127.0.0.1"; }
+    }
+
+    private void DebugPlayerCount()
+    {
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.ConnectedClientsList.Count == 0)
+        {
+            Debug.Log("No connected clients.");
+            return;
+        }
+
+        int playerCount = 0;
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject != null)
+            {
+                playerCount++;
+            }
+        }
+
+        Debug.Log($"Total player GameObjects in the network: {playerCount}");
     }
 }

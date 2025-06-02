@@ -69,22 +69,17 @@ public class EnemyAI : NetworkBehaviour
 
         // Update network variables for clients only when there are actual changes
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
-         {
-+            if (Vector3.Distance(networkPosition.Value, transform.position) > 0.1f)
-+            {
-+                if (Vector3.Distance(networkPosition.Value, transform.position) > 0.1f)
+        {
+            if (Vector3.Distance(networkPosition.Value, transform.position) > 0.1f)
             {
                 networkPosition.Value = transform.position;
             }
-            }
+
             if (Quaternion.Angle(networkRotation.Value, transform.rotation) > 1f)
             {
-    +            }
-+            if (Quaternion.Angle(networkRotation.Value, transform.rotation) > 1f)
-+            {
-+                networkRotation.Value = transform.rotation;
-+            }
-         }
+                networkRotation.Value = transform.rotation;
+            }
+        }
     }
 
     void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
@@ -95,11 +90,6 @@ public class EnemyAI : NetworkBehaviour
     void OnRotationChanged(Quaternion oldRot, Quaternion newRot)
     {
         // Client-side rotation update handled in Update method
-    }
-        if (!IsServer)
-        {
-            transform.rotation = newRot;
-        }
     }
 
     void ConfigureAgent()
@@ -130,7 +120,7 @@ public class EnemyAI : NetworkBehaviour
             yield break;
         }
 
-        isAgentReady && agent != null && agent.isOnNavMesh = true;
+        isAgentReady = true;
         behaviorCoroutine = StartCoroutine(AIBehaviorRoutine());
     }
 
@@ -139,6 +129,15 @@ public class EnemyAI : NetworkBehaviour
         while (isAgentReady && agent != null && agent.isOnNavMesh)
         {
             GameObject nearestPlayer = FindClosestPlayer();
+            
+            /*if (nearestPlayer != null)
+            {
+                Debug.Log($"Found player: {nearestPlayer.name} at distance {Vector3.Distance(transform.position, nearestPlayer.transform.position)}");
+            }
+            else
+            {
+                Debug.Log("No players found within detection range.");
+            }*/
 
             if (nearestPlayer != null)
             {
@@ -151,22 +150,22 @@ public class EnemyAI : NetworkBehaviour
                 yield return StartCoroutine(ChasePlayer(nearestPlayer));
             }
             else
-        }
-        
-        if (isChasing)
+            {
+                if (isChasing)
                 {
-        {
-               isChasing = false;
+                    isChasing = false;
                     agent.autoBraking = true;
                     agent.stoppingDistance = 0.1f;
-        Debug.LogError("Enemy AI stopped: NavMeshAgent is null or not on NavMesh");
+                }
                 yield return StartCoroutine(Wander());
             }
 
             yield return new WaitForSeconds(0.1f); // Small delay to prevent excessive processing
-            {
-                if (agent == null || !agent.isOnNavMesh)
-                         }*/
+        }
+        
+        if (agent == null || !agent.isOnNavMesh)
+        {
+            Debug.LogError("Enemy AI stopped: NavMeshAgent is null or not on NavMesh");
         }
     }
 
@@ -198,7 +197,7 @@ public class EnemyAI : NetworkBehaviour
     {
         float lastUpdateTime = Time.time;
 
-        while (player != null && agent != null && agent.isOnNavMesh && 
+        while (player != null && agent != null && agent.isOnNavMesh &&
                Vector3.Distance(transform.position, player.transform.position) <= detectionRange)
         {
             if (Time.time - lastUpdateTime >= followRefreshRate)
@@ -289,6 +288,11 @@ public class EnemyAI : NetworkBehaviour
             if (obj == null) continue;
 
             float dist = Vector3.Distance(transform.position, obj.transform.position);
+            if (dist <= detectionRange)
+            {
+                Debug.Log($"Player {obj.name} is within detection range of {detectionRange} units.");
+            }
+
             if (dist < minDist && dist <= detectionRange)
             {
                 minDist = dist;
