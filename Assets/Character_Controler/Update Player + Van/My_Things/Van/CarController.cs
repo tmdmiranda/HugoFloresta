@@ -10,6 +10,9 @@ public class CarController : NetworkBehaviour
     private float horizontalInput, verticalInput;
     private float currentSteerAngle, currentbreakForce;
     private bool isBreaking;
+
+    private bool hasRequestedReparent = false;
+
     private bool isColiding;
     public bool playerInsideCar = false;
     public GameObject player;
@@ -314,15 +317,38 @@ public class CarController : NetworkBehaviour
     {
         if (!playerInsideCar) return;
 
-        // Parent camera to van if not already
+        // Only request the server to reparent once (you can add a bool flag to avoid repeated calls)
+        if (!hasRequestedReparent)
+        {
+            RequestReparentServerRpc(NetworkManager.Singleton.LocalClientId);
+            hasRequestedReparent = true;
+        }
+
+        // Then, locally for camera movement, you can parent camera pivots if they are not NetworkObjects
+
+        // Example for local camera pivot (non-networked)
         if (playerCameraY.parent != carCamera)
         {
             playerCameraY.SetParent(carCamera, false);
             playerCameraY.localPosition = Vector3.zero;
             playerCameraY.localRotation = Quaternion.identity;
         }
-
     }
+
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestReparentServerRpc(ulong clientId, ServerRpcParams rpcParams = default)
+    {
+        // Find the NetworkObject of the client player (assuming you track it somewhere)
+        var clientNetworkObject = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
+
+        if (clientNetworkObject != null)
+        {
+            // Reparent the player's NetworkObject transform under the car's transform (or desired parent)
+            clientNetworkObject.transform.SetParent(transform, false);
+        }
+    }
+
     private void EnterCar()
     {
         int seatIndex = GetNextAvailableSeat();
