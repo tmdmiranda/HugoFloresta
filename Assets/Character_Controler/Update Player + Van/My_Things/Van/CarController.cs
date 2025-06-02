@@ -10,6 +10,9 @@ public class CarController : NetworkBehaviour
     private float horizontalInput, verticalInput;
     private float currentSteerAngle, currentbreakForce;
     private bool isBreaking;
+
+    private bool hasRequestedReparent = false;
+
     private bool isColiding;
     public bool playerInsideCar = false;
     public GameObject player;
@@ -245,49 +248,41 @@ public class CarController : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsOwner) return; // Only run on local player's car
+        if (!other.CompareTag("Player")) return;
 
-        if (other.CompareTag("Player"))
+        // Only proceed if this collider belongs to local player
+        if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
         {
-            if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
-            {
-                isColiding = true;
-                player = other.gameObject;
+            isColiding = true;
+            player = other.gameObject;
 
-                // Assign Y to player's transform, X to camera's transform
-                var cam = player.GetComponentInChildren<Camera>();
-                if (cam != null)
-                {
-                    playerCameraY = player.transform;   // Y-axis: whole player transform
-                    playerCameraX = cam.transform;      // X-axis: camera's transform
-                }
-                else
-                {
-                    Debug.LogWarning("Camera not found on player entering car trigger.");
-                }
+            var cam = player.GetComponentInChildren<Camera>();
+            if (cam != null)
+            {
+                playerCameraY = player.transform;
+                playerCameraX = cam.transform;
+            }
+            else
+            {
+                Debug.LogWarning("Camera not found on player entering car trigger.");
             }
         }
     }
-
 
     private void OnTriggerExit(Collider other)
     {
-        if (!IsOwner) return;
+        if (!other.CompareTag("Player")) return;
 
-        if (other.CompareTag("Player"))
+        if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
         {
-            if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
-            {
-                isColiding = false;
-            }
+            isColiding = false;
         }
     }
+
 
 
     private void Update()
     {
-        if (!IsOwner) return;
-
         if (Input.GetKeyDown(KeyCode.E))
         {
             if (isColiding && !playerInsideCar && !seatedPlayers.Contains(NetworkManager.Singleton.LocalClientId))
@@ -322,19 +317,40 @@ public class CarController : NetworkBehaviour
     {
         if (!playerInsideCar) return;
 
-        // Parent camera to van if not already
+        // Only request the server to reparent once (you can add a bool flag to avoid repeated calls)
+        if (!hasRequestedReparent)
+        {
+            RequestReparentServerRpc(NetworkManager.Singleton.LocalClientId);
+            hasRequestedReparent = true;
+        }
+
+        // Then, locally for camera movement, you can parent camera pivots if they are not NetworkObjects
+
+        // Example for local camera pivot (non-networked)
         if (playerCameraY.parent != carCamera)
         {
             playerCameraY.SetParent(carCamera, false);
             playerCameraY.localPosition = Vector3.zero;
             playerCameraY.localRotation = Quaternion.identity;
         }
-
     }
+
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestReparentServerRpc(ulong clientId, ServerRpcParams rpcParams = default)
+    {
+        // Find the NetworkObject of the client player (assuming you track it somewhere)
+        var clientNetworkObject = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
+
+        if (clientNetworkObject != null)
+        {
+            // Reparent the player's NetworkObject transform under the car's transform (or desired parent)
+            clientNetworkObject.transform.SetParent(transform, false);
+        }
+    }
+
     private void EnterCar()
     {
-        if (!IsOwner) return;
-
         int seatIndex = GetNextAvailableSeat();
         if (seatIndex == -1)
         {
