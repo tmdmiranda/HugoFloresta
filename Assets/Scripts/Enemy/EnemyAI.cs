@@ -38,8 +38,8 @@ public class EnemyAI : NetworkBehaviour
         if (!IsServer)
         {
             // For clients, sync position with server values
-            /*networkPosition.OnValueChanged += OnPositionChanged;
-            networkRotation.OnValueChanged += OnRotationChanged;*/
+            networkPosition.OnValueChanged += OnPositionChanged;
+            networkRotation.OnValueChanged += OnRotationChanged;
             return;
         }
 
@@ -67,30 +67,40 @@ public class EnemyAI : NetworkBehaviour
         // Server-side ground snapping
         // SnapToGround();
 
+        // Update network variables for clients only when there are actual changes
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
-        {
-            networkPosition.Value = transform.position;
-            networkRotation.Value = transform.rotation;
-        }
+         {
++            if (Vector3.Distance(networkPosition.Value, transform.position) > 0.1f)
++            {
++                if (Vector3.Distance(networkPosition.Value, transform.position) > 0.1f)
+            {
+                networkPosition.Value = transform.position;
+            }
+            }
+            if (Quaternion.Angle(networkRotation.Value, transform.rotation) > 1f)
+            {
+    +            }
++            if (Quaternion.Angle(networkRotation.Value, transform.rotation) > 1f)
++            {
++                networkRotation.Value = transform.rotation;
++            }
+         }
     }
 
-    /*void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
+    void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
     {
-        // Client-side position update
-        if (!IsServer)
-        {
-            transform.position = newPos;
-        }
-    }*/
+        // Client-side position update handled in Update method
+    }
 
-    /*void OnRotationChanged(Quaternion oldRot, Quaternion newRot)
+    void OnRotationChanged(Quaternion oldRot, Quaternion newRot)
     {
-        // Client-side rotation update
+        // Client-side rotation update handled in Update method
+    }
         if (!IsServer)
         {
             transform.rotation = newRot;
         }
-    }*/
+    }
 
     void ConfigureAgent()
     {
@@ -120,13 +130,13 @@ public class EnemyAI : NetworkBehaviour
             yield break;
         }
 
-        isAgentReady = true;
+        isAgentReady && agent != null && agent.isOnNavMesh = true;
         behaviorCoroutine = StartCoroutine(AIBehaviorRoutine());
     }
 
     IEnumerator AIBehaviorRoutine()
     {
-        while (isAgentReady)
+        while (isAgentReady && agent != null && agent.isOnNavMesh)
         {
             GameObject nearestPlayer = FindClosestPlayer();
 
@@ -141,22 +151,22 @@ public class EnemyAI : NetworkBehaviour
                 yield return StartCoroutine(ChasePlayer(nearestPlayer));
             }
             else
-            {
-                if (isChasing)
+        }
+        
+        if (isChasing)
                 {
-                    isChasing = false;
+        {
+               isChasing = false;
                     agent.autoBraking = true;
                     agent.stoppingDistance = 0.1f;
-                }
+        Debug.LogError("Enemy AI stopped: NavMeshAgent is null or not on NavMesh");
                 yield return StartCoroutine(Wander());
             }
 
-            // Update network variables for clients
-            /*if (IsServer && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
+            yield return new WaitForSeconds(0.1f); // Small delay to prevent excessive processing
             {
-                networkPosition.Value = transform.position;
-                networkRotation.Value = transform.rotation;
-            }*/
+                if (agent == null || !agent.isOnNavMesh)
+                         }*/
         }
     }
 
@@ -188,16 +198,23 @@ public class EnemyAI : NetworkBehaviour
     {
         float lastUpdateTime = Time.time;
 
-        while (player != null && Vector3.Distance(transform.position, player.transform.position) <= detectionRange)
+        while (player != null && agent != null && agent.isOnNavMesh && 
+               Vector3.Distance(transform.position, player.transform.position) <= detectionRange)
         {
             if (Time.time - lastUpdateTime >= followRefreshRate)
             {
-                agent.SetDestination(player.transform.position);
+                if (agent.isActiveAndEnabled)
+                {
+                    agent.SetDestination(player.transform.position);
+                }
                 lastUpdateTime = Time.time;
             }
 
             currentSpeed = Mathf.Lerp(currentSpeed, speed, Time.deltaTime * 2);
-            agent.speed = currentSpeed;
+            if (agent.isActiveAndEnabled)
+            {
+                agent.speed = currentSpeed;
+            }
 
             yield return null;
         }
@@ -205,6 +222,8 @@ public class EnemyAI : NetworkBehaviour
 
     IEnumerator Wander()
     {
+        if (agent == null || !agent.isOnNavMesh) yield break;
+
         Vector3 wanderPoint = RandomNavSphere(transform.position, wanderRadius, -1);
 
         while (Vector3.Distance(transform.position, wanderPoint) < minWanderDistance)
@@ -213,14 +232,17 @@ public class EnemyAI : NetworkBehaviour
             yield return null;
         }
 
-        agent.SetDestination(wanderPoint);
+        if (agent.isActiveAndEnabled)
+        {
+            agent.SetDestination(wanderPoint);
+        }
         float startTime = Time.time;
 
         currentSpeed = 0;
         float accelerateTime = 0.5f;
         float elapsedTime = 0;
 
-        while (elapsedTime < accelerateTime)
+        while (elapsedTime < accelerateTime && agent != null && agent.isActiveAndEnabled)
         {
             currentSpeed = Mathf.Lerp(0, speed, elapsedTime / accelerateTime);
             agent.speed = currentSpeed;
@@ -228,7 +250,8 @@ public class EnemyAI : NetworkBehaviour
             yield return null;
         }
 
-        while (Time.time - startTime < wanderTimer &&
+        while (agent != null && agent.isActiveAndEnabled &&
+               Time.time - startTime < wanderTimer &&
                agent.pathPending == false &&
                agent.remainingDistance > agent.stoppingDistance)
         {
@@ -241,7 +264,7 @@ public class EnemyAI : NetworkBehaviour
         float decelerateTime = 0.3f;
         float startDecelSpeed = currentSpeed;
 
-        while (elapsedTime < decelerateTime)
+        while (elapsedTime < decelerateTime && agent != null && agent.isActiveAndEnabled)
         {
             currentSpeed = Mathf.Lerp(startDecelSpeed, 0, elapsedTime / decelerateTime);
             agent.speed = currentSpeed;

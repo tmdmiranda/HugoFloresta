@@ -56,5 +56,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "HugoFloresta.sln"
+    "dotnet.defaultSolution": "HugoFloresta.sln",
+    "zencoder.enableRepoIndexing": true
 }

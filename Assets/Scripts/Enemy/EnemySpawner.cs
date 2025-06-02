@@ -9,8 +9,12 @@ public class EnemySpawner : NetworkBehaviour
     public int numberOfEnemies = 5;
     public float spawnRadius = 20f;
     public float minDistanceBetweenEnemies = 2f;
-    public LayerMask spawnLayerMask;
+    [Tooltip("Layer mask for collision detection (should include enemy layer)")]
+    public LayerMask spawnLayerMask = -1; // Default to everything
     public float navMeshSampleRange = 10f;
+    
+    [Header("Debug")]
+    public bool enableDebugLogs = true;
 
     public override void OnNetworkSpawn()
     {
@@ -22,8 +26,7 @@ public class EnemySpawner : NetworkBehaviour
             return;
         }
         
-        if (IsOwner == true)
-            SpawnEnemies();
+    SpawnEnemies();
     }
 
     private bool IsNavMeshReady()
@@ -37,7 +40,7 @@ public class EnemySpawner : NetworkBehaviour
         
         for (int i = 0; i < numberOfEnemies; i++)
         {
-            Debug.Log($"=== Attempting to spawn enemy {i} ===");
+            if (enableDebugLogs) Debug.Log($"=== Attempting to spawn enemy {i} ===");
             Vector3 spawnPos = Vector3.zero;
             bool foundPosition = false;
             
@@ -55,7 +58,7 @@ public class EnemySpawner : NetworkBehaviour
             {
                 SpawnSingleEnemy(spawnPos);
                 successfullySpawned++;
-                Debug.Log($"Successfully spawned enemy at {spawnPos}");
+                if (enableDebugLogs) Debug.Log($"Successfully spawned enemy at {spawnPos}");
             }
             else
             {
@@ -71,25 +74,25 @@ public class EnemySpawner : NetworkBehaviour
         // Generate random point in circle
         Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
         Vector3 randomPoint = transform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
-        Debug.Log($"Attempt {attemptNumber}: Trying point {randomPoint}");
+        if (enableDebugLogs) if (enableDebugLogs) Debug.Log($"Attempt {attemptNumber}: Trying point {randomPoint}");
 
         // Find nearest NavMesh position
         if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, navMeshSampleRange, NavMesh.AllAreas))
         {
-            Debug.Log($"Found NavMesh position at {hit.position} (distance: {hit.distance})");
+            if (enableDebugLogs) if (enableDebugLogs) Debug.Log($"Found NavMesh position at {hit.position} (distance: {hit.distance})");
 
-            // Check for collisions
-            /*bool hasCollision = Physics.CheckSphere(hit.position, minDistanceBetweenEnemies, spawnLayerMask);
-            Debug.Log($"Collision check: {(hasCollision ? "FAILED" : "PASSED")}");*/
+            // Check for collisions with existing enemies
+            bool hasCollision = Physics.CheckSphere(hit.position, minDistanceBetweenEnemies, spawnLayerMask);
+            if (enableDebugLogs) if (enableDebugLogs) Debug.Log($"Collision check: {(hasCollision ? "FAILED" : "PASSED")}");
 
-            //if (!hasCollision)
-            //{
+          if (!hasCollision)
+          {
                 return hit.position;
-            //}
+          }
         }
         else
         {
-            Debug.Log("No NavMesh found near this point");
+            if (enableDebugLogs) if (enableDebugLogs) Debug.Log("No NavMesh found near this point");
         }
         
         return Vector3.zero;
@@ -97,11 +100,23 @@ public class EnemySpawner : NetworkBehaviour
 
     private void SpawnSingleEnemy(Vector3 position)
     {
+        // Ensure the position is on the NavMesh before spawning
+        if (NavMesh.SamplePosition(position, out NavMeshHit hit, 1f, NavMesh.AllAreas))
+        {
+            position = hit.position;
+        }
+        else
+        {
+            Debug.LogError($"Failed to find valid NavMesh position for enemy spawn at {position}");
+            return;
+        }
+
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
         if (netObj != null)
         {
             netObj.Spawn();
+            Debug.Log($"Enemy spawned successfully at {position}");
         }
         else
         {
