@@ -5,36 +5,35 @@ using System;
 [RequireComponent(typeof(AudioSource))]
 public class VoiceTransmitter : NetworkBehaviour
 {
+    [Header("Settings")]
+    public int sampleRate = 16000;
+    public int chunkSize = 1024;
+    public KeyCode pushToTalkKey = KeyCode.V;
+    public float voiceVolume = 1f;
 
-    [Header("Voice Settings")]
-    [Range(0.1f, 1f)] public float voiceVolume = 0.8f;
-    [Range(0.05f, 0.2f)] public float transmissionInterval = 0.1f;
-    public float maxHearingDistance = 20f;
     private AudioClip micClip;
-    private const int sampleRate = 44100; // Increased for better quality
-    private const int chunkSize = 2048; // Larger buffer for stability
     private string micDevice;
     private bool isTransmitting;
-    private float[] audioBuffer = new float[chunkSize];
     private int lastSamplePos;
-
-    [SerializeField] private KeyCode pushToTalkKey = KeyCode.V; 
-    private float nextTransmitTime;
+    private float[] audioBuffer;
 
     private void Start()
     {
-        if (IsOwner)
+        if (!IsOwner) return;
+
+        audioBuffer = new float[chunkSize];
+        micDevice = Microphone.devices.Length > 0 ? Microphone.devices[0] : null;
+
+        if (micDevice != null)
         {
-            micDevice = Microphone.devices.Length > 0 ? Microphone.devices[0] : null;
-            if (micDevice != null)
-            {
-                micClip = Microphone.Start(micDevice, true, 1, sampleRate);
-                Debug.Log($"Microphone started: {micDevice}, Sample rate: {sampleRate}");
-            }
-            else
-            {
-                Debug.LogWarning("No microphone detected!");
-            }
+            micClip = Microphone.Start(micDevice, true, 1, sampleRate);
+            lastSamplePos = Microphone.GetPosition(micDevice);
+            Debug.Log($"[Transmitter] Microphone started: {micDevice}, SampleRate: {sampleRate}");
+        }
+        else
+        {
+            Debug.LogError("[Transmitter] No microphone detected!");
+            enabled = false;
         }
     }
 
@@ -42,75 +41,58 @@ public class VoiceTransmitter : NetworkBehaviour
     {
         if (!IsOwner || micClip == null) return;
 
-        // Toggle transmission state
         if (Input.GetKeyDown(pushToTalkKey)) isTransmitting = true;
         if (Input.GetKeyUp(pushToTalkKey)) isTransmitting = false;
 
-        // Transmit at intervals when key is held
-        if (isTransmitting && Time.time >= nextTransmitTime)
-        {
-            TransmitVoiceChunk();
-            nextTransmitTime = Time.time + transmissionInterval;
-        }
-    }
+        if (!isTransmitting) return;
 
-    private void TransmitVoiceChunk()
-    {
         int currentPos = Microphone.GetPosition(micDevice);
-        if (currentPos <= lastSamplePos) return;
+        int samplesAvailable = currentPos - lastSamplePos;
 
-        // Get new samples since last transmission
-        int sampleCount = currentPos - lastSamplePos;
-        if (sampleCount <= 0) return;
+        if (samplesAvailable < 0)
+            samplesAvailable += micClip.samples;
 
-        // Ensure we don't exceed buffer size
-        sampleCount = Mathf.Min(sampleCount, chunkSize);
-        float[] samples = new float[sampleCount];
-        micClip.GetData(samples, lastSamplePos);
-
-        // Apply volume
-        for (int i = 0; i < samples.Length; i++)
+        if (samplesAvailable >= chunkSize)
         {
-            samples[i] *= voiceVolume;
+            TransmitVoiceChunk(currentPos);
         }
-
-        // Send compressed data
-        byte[] compressed = CompressAudio(samples);
-        SendVoiceServerRpc(compressed);
-
-        lastSamplePos = currentPos;
     }
 
-    private byte[] CompressAudio(float[] samples)
+    private void TransmitVoiceChunk(int currentPos)
     {
-        // Simple compression (for real projects use proper codec)
-        byte[] bytes = new byte[samples.Length * sizeof(float)];
-        Buffer.BlockCopy(samples, 0, bytes, 0, bytes.Length);
-        return bytes;
+        micClip.GetData(audioBuffer, lastSamplePos);
+        lastSamplePos = (lastSamplePos + chunkSize) % micClip.samples;
+
+        for (int i = 0; i < audioBuffer.Length; i++)
+        {
+            audioBuffer[i] *= voiceVolume;
+        }
+
+        byte[] byteData = new byte[audioBuffer.Length * sizeof(float)];
+        Buffer.BlockCopy(audioBuffer, 0, byteData, 0, byteData.Length);
+
+        Debug.Log($"[Transmitter] Sending {byteData.Length} bytes of audio data.");
+        SendVoiceDataServerRpc(byteData);
     }
 
     [ServerRpc]
-    private void SendVoiceServerRpc(byte[] compressedData, ServerRpcParams rpcParams = default)
+    private void SendVoiceDataServerRpc(byte[] voiceData, ServerRpcParams rpcParams = default)
     {
-        ReceiveVoiceClientRpc(compressedData, rpcParams.Receive.SenderClientId);
+        Debug.Log($"[Server] Relaying {voiceData.Length} bytes from client {rpcParams.Receive.SenderClientId}");
+        ReceiveVoiceDataClientRpc(voiceData, rpcParams.Receive.SenderClientId);
     }
 
     [ClientRpc]
-    private void ReceiveVoiceClientRpc(byte[] compressedData, ulong senderId)
+    private void ReceiveVoiceDataClientRpc(byte[] voiceData, ulong senderId)
     {
         if (IsOwner) return;
 
-        float[] samples = DecompressAudio(compressedData);
-        VoiceReceiver receiver = GetComponent<VoiceReceiver>();
-        if (receiver == null) receiver = gameObject.AddComponent<VoiceReceiver>();
-        receiver.PlayVoiceClip(samples, sampleRate);
-    }
+        float[] audioData = new float[voiceData.Length / sizeof(float)];
+        Buffer.BlockCopy(voiceData, 0, audioData, 0, voiceData.Length);
+        Debug.Log($"[Client Receiver] Received {audioData.Length} float samples from client {senderId}");
 
-    private float[] DecompressAudio(byte[] bytes)
-    {
-        float[] samples = new float[bytes.Length / sizeof(float)];
-        Buffer.BlockCopy(bytes, 0, samples, 0, bytes.Length);
-        return samples;
+        var receiver = GetComponent<VoiceReceiver>() ?? gameObject.AddComponent<VoiceReceiver>();
+        receiver.AddAudioData(audioData, sampleRate);
     }
 
     private void OnDestroy()

@@ -158,6 +158,7 @@ public class CarController : NetworkBehaviour
 
     private void HandleClientVisuals()
     {
+        if (!IsOwner) return; // Only run on local player's car
         // Smoothly interpolate to host's state
         rb.position = Vector3.Lerp(rb.position, networkPosition.Value, Time.fixedDeltaTime * 10f);
         rb.rotation = Quaternion.Lerp(rb.rotation, networkRotation.Value, Time.fixedDeltaTime * 10f);
