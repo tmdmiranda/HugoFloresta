@@ -75,6 +75,19 @@ public class VoiceTransmitter : NetworkBehaviour
         SendVoiceDataServerRpc(byteData);
     }
 
+    public void SetMicrophoneDevice(string deviceName)
+    {
+        if (Microphone.IsRecording(micDevice))
+        {
+            Microphone.End(micDevice);
+        }
+
+        micDevice = deviceName;
+        micClip = Microphone.Start(micDevice, true, 1, sampleRate);
+        lastSamplePos = Microphone.GetPosition(micDevice);
+        Debug.Log($"Switched to mic: {micDevice}");
+    }
+
     [ServerRpc]
     private void SendVoiceDataServerRpc(byte[] voiceData, ServerRpcParams rpcParams = default)
     {
@@ -85,7 +98,7 @@ public class VoiceTransmitter : NetworkBehaviour
     [ClientRpc]
     private void ReceiveVoiceDataClientRpc(byte[] voiceData, ulong senderId)
     {
-        if (IsOwner) return;
+        //if (IsOwner) return;
 
         float[] audioData = new float[voiceData.Length / sizeof(float)];
         Buffer.BlockCopy(voiceData, 0, audioData, 0, voiceData.Length);
