@@ -62,6 +62,42 @@ public class CarController : NetworkBehaviour
     private NetworkVariable<Vector3> networkVelocity = new NetworkVariable<Vector3>();
     private NetworkVariable<Vector3> networkAngularVelocity = new NetworkVariable<Vector3>();
 
+    [Header("Camera Settings")]
+    [SerializeField] private float cameraFollowSpeed = 5f;
+    [SerializeField] private float deadzoneAngle = 5f;
+    [SerializeField] private float maxLookAngle = 90f;
+
+    private void HandleVehicleCamera()
+    {
+        if (!playerInsideCar) return;
+
+        // Get mouse input
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+
+        // Calculate target vertical rotation
+        float targetXRotation = playerCameraX.localEulerAngles.x - mouseY;
+        targetXRotation = Mathf.Clamp(NormalizeAngle(targetXRotation), -maxLookAngle, maxLookAngle);
+
+        // Apply deadzone near center
+        if (Mathf.Abs(targetXRotation) < deadzoneAngle)
+        {
+            targetXRotation = 0f;
+        }
+
+        // Smoothly apply rotation
+        playerCameraX.localRotation = Quaternion.Slerp(
+            playerCameraX.localRotation,
+            Quaternion.Euler(targetXRotation, 0f, 0f),
+            cameraFollowSpeed * Time.deltaTime
+        );
+    }
+
+    private float NormalizeAngle(float angle)
+    {
+        angle %= 360f;
+        if (angle > 180f) angle -= 360f;
+        return angle;
+    }
     private void Awake()
     {
         carInputHandler = GetComponent<CarInputHandler>();
@@ -215,21 +251,6 @@ public class CarController : NetworkBehaviour
             playerCameraY.localRotation = Quaternion.identity;
         }
 
-        // Get vertical input
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
-
-        // Calculate target rotation
-        float targetXRotation = playerCameraX.localEulerAngles.x - mouseY;
-        targetXRotation = Mathf.Clamp(targetXRotation, -90f, 90f);
-
-        // Smoothly rotate
-        float smoothedXRotation = Mathf.LerpAngle(
-            playerCameraX.localEulerAngles.x,
-            targetXRotation,
-            rotationSmoothness * Time.deltaTime
-        );
-
-        playerCameraX.localEulerAngles = new Vector3(smoothedXRotation, 0f, 0f);
     }
     private void EnterCar()
     {
@@ -300,12 +321,6 @@ public class CarController : NetworkBehaviour
 
 
 
-    private float NormalizeAngle(float angle)
-    {
-        angle %= 360f;
-        if (angle > 180f) angle -= 360f;
-        return angle;
-    }
 
 
 
