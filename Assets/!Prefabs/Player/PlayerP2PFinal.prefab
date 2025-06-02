@@ -79,8 +79,8 @@ Transform:
   m_GameObject: {fileID: 4954961083992475231}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
-  m_LocalScale: {x: 1, y: 1.9999499, z: 1}
+  m_LocalPosition: {x: 0, y: 0.0177, z: 0}
+  m_LocalScale: {x: 1, y: 1.0177745, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5977681402616606700}
@@ -166,7 +166,7 @@ Transform:
   m_GameObject: {fileID: 5836793228511005750}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.5, z: 0}
+  m_LocalPosition: {x: 0, y: 0.624, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -291,6 +291,8 @@ GameObject:
   - component: {fileID: 497777071144753403}
   - component: {fileID: 6365927622199184313}
   - component: {fileID: 8347653169245925307}
+  - component: {fileID: -2547287648242831759}
+  - component: {fileID: 7174162281333321930}
   m_Layer: 0
   m_Name: PlayerP2PFinal
   m_TagString: Player
@@ -478,3 +480,33 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 4, y: 4, z: 4}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-2547287648242831759
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7591108086318982121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6db294a8888ed1a4a8aeac9d4640cc37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  nameTag: {fileID: 0}
+--- !u!114 &7174162281333321930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7591108086318982121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43167b9bac1708f4cb36ef01067cb049, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  verticalOffset: 2
+  rotationOffset: {x: 45, y: 0, z: 0}
+  nameColor: {r: 1, g: 1, b: 1, a: 1}
+  nameplateScale: 0.1
