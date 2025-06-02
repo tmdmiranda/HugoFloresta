@@ -199,6 +199,8 @@ public class P2P_Manager : NetworkBehaviour
             GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
 
+            netObj.SpawnWithOwnership(clientId, true);
+
             if (netObj == null)
             {
                 Debug.LogError($"PlayerPrefab is missing NetworkObject component for client {clientId}");
@@ -226,7 +228,7 @@ public class P2P_Manager : NetworkBehaviour
         Debug.Log("Finished spawning all players");
         DebugPlayerCount();
         SpawnVan();
-        enemySpawner.OnPDiddySpawn();
+        enemySpawner.OnNetworkSpawn();
     }
 
     private Vector3 CalculateSpawnPosition(int index, int totalPlayers)

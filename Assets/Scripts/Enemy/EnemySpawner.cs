@@ -10,7 +10,7 @@ public class EnemySpawner : NetworkBehaviour
     public float spawnRadius = 20f;
     public float minDistanceBetweenEnemies = 2f;
     [Tooltip("Layer mask for collision detection (should include enemy layer)")]
-    public LayerMask spawnLayerMask = -1; // Default to everything
+    public LayerMask spawnLayerMask = -1;
     public float navMeshSampleRange = 10f;
 
     [Header("Debug")]
