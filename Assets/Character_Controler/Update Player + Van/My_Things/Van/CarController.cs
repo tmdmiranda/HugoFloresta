@@ -1,6 +1,9 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
+using System.Collections;
+using System.Linq;
 
 public class CarController : NetworkBehaviour
 {
@@ -10,6 +13,12 @@ public class CarController : NetworkBehaviour
     private bool isColiding;
     public bool playerInsideCar = false;
     public GameObject player;
+
+    [Header("Seating System")]
+    [SerializeField] private Transform[] seats; // Assign in inspector: [0]=driver, [1]=secondDriver, [2-5]=backseats
+    private NetworkVariable<int> availableSeats = new NetworkVariable<int>(6); // Total seats count
+    private NetworkList<ulong> seatedPlayers = new NetworkList<ulong>();
+    private Dictionary<ulong, int> playerSeatIndices = new Dictionary<ulong, int>();
 
     [Header("Camera Settings")]
     [SerializeField] private float mouseSensitivity = 100f;
@@ -67,6 +76,60 @@ public class CarController : NetworkBehaviour
     [SerializeField] private float deadzoneAngle = 5f;
     [SerializeField] private float maxLookAngle = 90f;
 
+
+    private void InitializeSeats()
+    {
+        // Ensure seats array is properly assigned
+        if (seats == null || seats.Length != 6)
+        {
+            Debug.LogError("Seats not properly assigned! Need 6 seats (driver + secondDriver + 4 backseats)");
+            return;
+        }
+    }
+
+    private int GetNextAvailableSeat()
+    {
+        for (int i = 0; i < seats.Length; i++)
+        {
+            if (!playerSeatIndices.ContainsValue(i))
+            {
+                return i;
+            }
+        }
+        return -1; // No available seats
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void AssignSeatServerRpc(ulong clientId, ServerRpcParams rpcParams = default)
+    {
+        if (seatedPlayers.Contains(clientId)) return;
+
+        int seatIndex = GetNextAvailableSeat();
+        if (seatIndex == -1) return;
+
+        seatedPlayers.Add(clientId);
+        playerSeatIndices[clientId] = seatIndex;
+        availableSeats.Value--;
+
+        AssignSeatClientRpc(clientId, seatIndex);
+    }
+
+    [ClientRpc]
+    private void AssignSeatClientRpc(ulong clientId, int seatIndex)
+    {
+        if (clientId == NetworkManager.Singleton.LocalClientId)
+        {
+            // This is me - move to the assigned seat
+            player.transform.position = seats[seatIndex].position;
+            player.transform.rotation = seats[seatIndex].rotation;
+
+            if (seatIndex == 0) // Driver seat
+            {
+                playerInsideCar = true;
+                GetComponent<CarInputHandler>().enabled = true;
+            }
+        }
+    }
     private void HandleVehicleCamera()
     {
         if (!playerInsideCar) return;
@@ -109,6 +172,12 @@ public class CarController : NetworkBehaviour
     {
         base.OnNetworkSpawn();
 
+        if (IsServer)
+        {
+            seatedPlayers.OnListChanged += OnSeatedPlayersChanged;
+        }
+
+        InitializeSeats();
         if (IsClient && !IsHost)
         {
             rb.isKinematic = true; // Disable physics on clients
@@ -123,6 +192,11 @@ public class CarController : NetworkBehaviour
         }
     }
 
+
+    private void OnSeatedPlayersChanged(NetworkListEvent<ulong> changeEvent)
+    {
+        Debug.Log($"Seated players changed: {string.Join(",", seatedPlayers)}");
+    }
     public void EnableVanPhysics()
     {
         rb.isKinematic = false;
@@ -216,10 +290,14 @@ public class CarController : NetworkBehaviour
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            if (isColiding && !playerInsideCar)
-                isTransiting = true;
-            else if (playerInsideCar)
-                ExitCar();
+            if (isColiding && !playerInsideCar && !seatedPlayers.Contains(NetworkManager.Singleton.LocalClientId))
+            {
+                EnterCar();
+            }
+            else if (playerInsideCar || seatedPlayers.Contains(NetworkManager.Singleton.LocalClientId))
+            {
+                ExitSeatServerRpc(NetworkManager.Singleton.LocalClientId);
+            }
         }
 
         if (Input.GetKeyDown(KeyCode.F))
@@ -255,19 +333,59 @@ public class CarController : NetworkBehaviour
     }
     private void EnterCar()
     {
+        if (!IsOwner) return;
+
+        int seatIndex = GetNextAvailableSeat();
+        if (seatIndex == -1)
+        {
+            Debug.Log("Car is full!");
+            return;
+        }
+
         player.GetComponent<CharacterController>().enabled = false;
         player.GetComponent<FirstPersonController>().playerCanMove = false;
 
-        // Smooth transition
-        player.transform.position = Vector3.Lerp(player.transform.position, driverSeat.position, 10f * Time.deltaTime);
-        player.transform.rotation = Quaternion.Lerp(player.transform.rotation, driverSeat.rotation, 10f * Time.deltaTime);
+        AssignSeatServerRpc(NetworkManager.Singleton.LocalClientId);
+    }
 
-        if (Vector3.Distance(player.transform.position, driverSeat.position) < 0.1f)
+    [ServerRpc(RequireOwnership = false)]
+    private void ExitSeatServerRpc(ulong clientId, ServerRpcParams rpcParams = default)
+    {
+        if (!seatedPlayers.Contains(clientId)) return;
+
+        int seatIndex = playerSeatIndices[clientId];
+        seatedPlayers.Remove(clientId);
+        playerSeatIndices.Remove(clientId);
+        availableSeats.Value++;
+
+        ExitSeatClientRpc(clientId, seatIndex);
+    }
+
+    [ClientRpc]
+    private void ExitSeatClientRpc(ulong clientId, int seatIndex)
+    {
+        if (clientId == NetworkManager.Singleton.LocalClientId)
         {
-            player.transform.position = driverSeat.position;
-            player.transform.rotation = driverSeat.rotation;
-            isTransiting = false;
-            playerInsideCar = true;
+            // Calculate safe exit position
+            Vector3 exitPosition = exitPoint.position;
+            if (Physics.Raycast(exitPoint.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 2f))
+            {
+                exitPosition.y = hit.point.y + 0.2f;
+            }
+
+            player.transform.position = exitPosition;
+
+            var controller = player.GetComponent<CharacterController>();
+            if (controller != null) controller.enabled = true;
+
+            var fpsController = player.GetComponent<FirstPersonController>();
+            if (fpsController != null) fpsController.playerCanMove = true;
+
+            if (seatIndex == 0) // Was driver
+            {
+                playerInsideCar = false;
+                GetComponent<CarInputHandler>().enabled = false;
+            }
         }
     }
 

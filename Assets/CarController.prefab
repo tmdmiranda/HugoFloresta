@@ -1426,6 +1426,13 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   playerInsideCar: 0
   player: {fileID: 0}
+  seats:
+  - {fileID: 7197664036513208044}
+  - {fileID: 1484925197931895975}
+  - {fileID: 2174549156338679714}
+  - {fileID: 8520378795049221013}
+  - {fileID: 2231678765117440989}
+  - {fileID: 2173133673556265873}
   mouseSensitivity: 100
   carCamera: {fileID: 8167707487106843994}
   playerCameraY: {fileID: 0}
