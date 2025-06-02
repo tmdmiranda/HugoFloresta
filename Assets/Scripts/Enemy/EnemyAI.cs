@@ -64,8 +64,30 @@ public class EnemyAI : NetworkBehaviour
             return;
         }
 
-        // Server-side ground snapping
-        // SnapToGround();
+        GameObject nearestPlayer = FindClosestPlayer();
+        if (nearestPlayer != null)
+        {
+            float dist = Vector3.Distance(transform.position, nearestPlayer.transform.position);
+            if (dist > stoppingDistance)
+            {
+                if (agent != null && agent.isOnNavMesh)
+                {
+                    agent.SetDestination(nearestPlayer.transform.position);
+                    agent.speed = speed;
+                }
+            }
+            else
+            {
+                if (agent != null && agent.isOnNavMesh)
+                {
+                    agent.ResetPath();
+                }
+            }
+        }
+        else
+        {
+            Wander();
+        }
 
         // Update network variables for clients only when there are actual changes
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
@@ -81,6 +103,30 @@ public class EnemyAI : NetworkBehaviour
             }
         }
     }
+
+    // Função para seguir o player mais próximo
+    /*void FollowNearestPlayer()
+    {
+        GameObject nearestPlayer = FindClosestPlayer();
+        if (nearestPlayer == null) return;
+
+        float dist = Vector3.Distance(transform.position, nearestPlayer.transform.position);
+        if (dist > stoppingDistance)
+        {
+            if (agent != null && agent.isOnNavMesh)
+            {
+                agent.SetDestination(nearestPlayer.transform.position);
+                agent.speed = speed;
+            }
+        }
+        else
+        {
+            if (agent != null && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+            }
+        }
+    }*/
 
     void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
     {
@@ -276,23 +322,15 @@ public class EnemyAI : NetworkBehaviour
 
     GameObject FindClosestPlayer()
     {
-        if (NetworkManager.Singleton == null || NetworkManager.Singleton.ConnectedClientsList.Count == 0)
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        if (players.Length == 0)
             return null;
 
         GameObject closest = null;
         float minDist = float.MaxValue;
-
-        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        foreach (var obj in players)
         {
-            GameObject obj = client.PlayerObject?.gameObject;
-            if (obj == null) continue;
-
             float dist = Vector3.Distance(transform.position, obj.transform.position);
-            if (dist <= detectionRange)
-            {
-                Debug.Log($"Player {obj.name} is within detection range of {detectionRange} units.");
-            }
-
             if (dist < minDist && dist <= detectionRange)
             {
                 minDist = dist;
