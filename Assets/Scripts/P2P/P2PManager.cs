@@ -199,8 +199,6 @@ public class P2P_Manager : NetworkBehaviour
             GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
 
-            netObj.SpawnWithOwnership(clientId, true);
-
             if (netObj == null)
             {
                 Debug.LogError($"PlayerPrefab is missing NetworkObject component for client {clientId}");
@@ -226,7 +224,6 @@ public class P2P_Manager : NetworkBehaviour
         }
 
         Debug.Log("Finished spawning all players");
-        DebugPlayerCount();
         SpawnVan();
         enemySpawner.OnNetworkSpawn();
     }
@@ -535,25 +532,5 @@ public class P2P_Manager : NetworkBehaviour
             }
         }
         catch { return "127.0.0.1"; }
-    }
-
-    private void DebugPlayerCount()
-    {
-        if (NetworkManager.Singleton == null || NetworkManager.Singleton.ConnectedClientsList.Count == 0)
-        {
-            Debug.Log("No connected clients.");
-            return;
-        }
-
-        int playerCount = 0;
-        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            if (client.PlayerObject != null)
-            {
-                playerCount++;
-            }
-        }
-
-        Debug.Log($"Total player GameObjects in the network: {playerCount}");
     }
 }
