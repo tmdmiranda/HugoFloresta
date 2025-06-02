@@ -63,6 +63,7 @@ public class CarController : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!IsServer) return;
         if (other.CompareTag("Player"))
         {
             isColiding = true;

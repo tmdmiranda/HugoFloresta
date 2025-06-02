@@ -16,7 +16,7 @@ public class EnemySpawner : NetworkBehaviour
     [Header("Debug")]
     public bool enableDebugLogs = true;
 
-    public override void OnNetworkSpawn()
+    public void OnPDiddySpawn()
     {
         if (!IsServer) return;
         

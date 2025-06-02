@@ -39,6 +39,9 @@ public class P2P_Manager : NetworkBehaviour
     private UnityTransport transport;
     private NetworkList<PlayerLobbyData> playerData;
     private GameObject lobbyPanelInstance;
+    [SerializeField] private EnemySpawner enemySpawner;
+
+    [SerializeField] GameObject vanPrefab;
 
     public struct PlayerLobbyData : INetworkSerializable, IEquatable<PlayerLobbyData>
     {
@@ -115,6 +118,7 @@ public class P2P_Manager : NetworkBehaviour
         transport.SetConnectionData("0.0.0.0", port);
 
         RegisterPlayerPrefab();
+
     }
     public void StartGame()
     {
@@ -187,8 +191,34 @@ public class P2P_Manager : NetworkBehaviour
         }
 
         Debug.Log("Finished spawning all players");
+        SpawnVan();
+        enemySpawner.OnPDiddySpawn();
+
     }
 
+    public void SpawnVan()
+    {
+        if (!IsServer) return;
+
+        if (vanPrefab == null)
+        {
+            Debug.LogError("Van prefab not found in Resources!");
+            return;
+        }
+
+        Vector3 spawnPos = new Vector3(915f, 4f, 423f);
+        GameObject van = Instantiate(vanPrefab, spawnPos, Quaternion.identity);
+        NetworkObject vanNetObj = van.GetComponent<NetworkObject>();
+
+        if (vanNetObj == null)
+        {
+            Debug.LogError("Van prefab is missing NetworkObject component!");
+            return;
+        }
+
+        vanNetObj.Spawn();
+        Debug.Log("Van spawned successfully");
+    }
 
 
 

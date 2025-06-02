@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 
-public class FirstPersonController : MonoBehaviour
+public class FirstPersonController : NetworkBehaviour
 {
     [Header("Player Status")]
     [SerializeField] public bool playerCanMove = true;
@@ -33,19 +34,46 @@ public class FirstPersonController : MonoBehaviour
     private float verticalRotation;
     private float CurrentSpeed => walkSpeed * (playerInputHandler.SprintTriggered ? sprintMultiplier : 1);
 
+    // Network crouch state
+    private NetworkVariable<bool> isCrouchingNetwork = new NetworkVariable<bool>();
+
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        if (IsOwner)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else
+        {
+            mainCamera.enabled = false;
+            mainCamera.GetComponent<AudioListener>().enabled = false;
+        }
+
+        // Subscribe to crouch state changes
+        isCrouchingNetwork.OnValueChanged += OnCrouchStateChanged;
+    }
+
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+        isCrouchingNetwork.OnValueChanged -= OnCrouchStateChanged;
+    }
+
+    private void OnCrouchStateChanged(bool previousValue, bool newValue)
+    {
+        ApplyCrouchState(newValue);
     }
 
     void Update()
     {
-        if (playerCanLookAround == true)
+        if (!IsOwner) return;
+
+        if (playerCanLookAround)
         {
             HandleRotation();
         }
-        if (playerCanMove == true)
+        if (playerCanMove)
         {
             HandleMovement();
             HandleCrouching();
@@ -65,7 +93,6 @@ public class FirstPersonController : MonoBehaviour
         {
             currentMovement.y = -0.5f;
 
-
             if (playerInputHandler.JumpTriggered)
             {
                 currentMovement.y = jumpForce;
@@ -82,7 +109,6 @@ public class FirstPersonController : MonoBehaviour
         Vector3 worldDirection = CalculateWorldDirection();
         currentMovement.x = worldDirection.x * CurrentSpeed;
         currentMovement.z = worldDirection.z * CurrentSpeed;
-
 
         HandleJumping();
         characterController.Move(currentMovement * Time.deltaTime);
@@ -104,22 +130,33 @@ public class FirstPersonController : MonoBehaviour
         float mouseXRotation = playerInputHandler.RotationInput.x * mouseSensitivity;
         float mouseYRotation = playerInputHandler.RotationInput.y * mouseSensitivity;
 
-
         ApplyHorizontalRotation(mouseXRotation);
         ApplyVerticalRotation(mouseYRotation);
     }
 
     private void HandleCrouching()
     {
-        if (playerInputHandler.CrouchTriggered)
+        if (playerInputHandler.CrouchTriggered != isCrouchingNetwork.Value)
+        {
+            SetCrouchStateServerRpc(playerInputHandler.CrouchTriggered);
+        }
+    }
+
+    private void ApplyCrouchState(bool shouldCrouch)
+    {
+        if (characterController == null) return;
+
+        if (shouldCrouch)
         {
             characterController.height = 1f;
             characterController.center = new Vector3(0, -0.5f, 0);
             mainCamera.transform.localPosition = new Vector3(0, 0, 0);
 
-            //Transform Body
-            playerBody.localPosition = new Vector3(0, -0.5f, 0);
-            playerBody.localScale = new Vector3(1, 0.5f, 1);
+            if (playerBody != null)
+            {
+                playerBody.localPosition = new Vector3(0, -0.5f, 0);
+                playerBody.localScale = new Vector3(1, 0.5f, 1);
+            }
         }
         else
         {
@@ -127,10 +164,17 @@ public class FirstPersonController : MonoBehaviour
             characterController.center = new Vector3(0, 0, 0);
             mainCamera.transform.localPosition = new Vector3(0, 0.7f, 0);
 
-            //Transform Body
-            playerBody.localPosition = new Vector3(0, 0, 0);
-            playerBody.localScale = new Vector3(1, 1, 1);
+            if (playerBody != null)
+            {
+                playerBody.localPosition = new Vector3(0, 0, 0);
+                playerBody.localScale = new Vector3(1, 1, 1);
+            }
         }
     }
-}
 
+    [ServerRpc]
+    private void SetCrouchStateServerRpc(bool state)
+    {
+        isCrouchingNetwork.Value = state;
+    }
+}
