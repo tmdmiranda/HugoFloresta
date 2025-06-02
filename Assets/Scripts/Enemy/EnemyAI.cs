@@ -20,11 +20,6 @@ public class EnemyAI : NetworkBehaviour
     public float wanderTimer = 5f;
     public float minWanderDistance = 2f;
 
-    /*[Header("Ground Settings")]
-    public float groundCheckDistance = 0.5f;
-    public LayerMask groundLayer;
-    public float groundSnapSpeed = 5f;*/
-
     private NavMeshAgent agent;
     private bool isAgentReady = false;
     private Coroutine behaviorCoroutine;
@@ -104,30 +99,6 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
-    // Função para seguir o player mais próximo
-    /*void FollowNearestPlayer()
-    {
-        GameObject nearestPlayer = FindClosestPlayer();
-        if (nearestPlayer == null) return;
-
-        float dist = Vector3.Distance(transform.position, nearestPlayer.transform.position);
-        if (dist > stoppingDistance)
-        {
-            if (agent != null && agent.isOnNavMesh)
-            {
-                agent.SetDestination(nearestPlayer.transform.position);
-                agent.speed = speed;
-            }
-        }
-        else
-        {
-            if (agent != null && agent.isOnNavMesh)
-            {
-                agent.ResetPath();
-            }
-        }
-    }*/
-
     void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
     {
         // Client-side position update handled in Update method
@@ -175,15 +146,6 @@ public class EnemyAI : NetworkBehaviour
         while (isAgentReady && agent != null && agent.isOnNavMesh)
         {
             GameObject nearestPlayer = FindClosestPlayer();
-            
-            /*if (nearestPlayer != null)
-            {
-                Debug.Log($"Found player: {nearestPlayer.name} at distance {Vector3.Distance(transform.position, nearestPlayer.transform.position)}");
-            }
-            else
-            {
-                Debug.Log("No players found within detection range.");
-            }*/
 
             if (nearestPlayer != null)
             {
@@ -214,30 +176,6 @@ public class EnemyAI : NetworkBehaviour
             Debug.LogError("Enemy AI stopped: NavMeshAgent is null or not on NavMesh");
         }
     }
-
-    /*void SnapToGround()
-    {
-        if (!IsServer) return;
-
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out hit, groundCheckDistance + 0.5f, groundLayer))
-        {
-            // Smoothly snap to ground
-            Vector3 targetPosition = new Vector3(
-                transform.position.x,
-                hit.point.y,
-                transform.position.z
-            );
-
-            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * groundSnapSpeed);
-
-            // Force NavMeshAgent to stay on ground
-            if (agent != null && agent.isOnNavMesh)
-            {
-                agent.Warp(transform.position);
-            }
-        }
-    }*/
 
     IEnumerator ChasePlayer(GameObject player)
     {
