@@ -245,49 +245,41 @@ public class CarController : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsOwner) return; // Only run on local player's car
+        if (!other.CompareTag("Player")) return;
 
-        if (other.CompareTag("Player"))
+        // Only proceed if this collider belongs to local player
+        if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
         {
-            if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
-            {
-                isColiding = true;
-                player = other.gameObject;
+            isColiding = true;
+            player = other.gameObject;
 
-                // Assign Y to player's transform, X to camera's transform
-                var cam = player.GetComponentInChildren<Camera>();
-                if (cam != null)
-                {
-                    playerCameraY = player.transform;   // Y-axis: whole player transform
-                    playerCameraX = cam.transform;      // X-axis: camera's transform
-                }
-                else
-                {
-                    Debug.LogWarning("Camera not found on player entering car trigger.");
-                }
+            var cam = player.GetComponentInChildren<Camera>();
+            if (cam != null)
+            {
+                playerCameraY = player.transform;
+                playerCameraX = cam.transform;
+            }
+            else
+            {
+                Debug.LogWarning("Camera not found on player entering car trigger.");
             }
         }
     }
-
 
     private void OnTriggerExit(Collider other)
     {
-        if (!IsOwner) return;
+        if (!other.CompareTag("Player")) return;
 
-        if (other.CompareTag("Player"))
+        if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
         {
-            if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
-            {
-                isColiding = false;
-            }
+            isColiding = false;
         }
     }
+
 
 
     private void Update()
     {
-        if (!IsOwner) return;
-
         if (Input.GetKeyDown(KeyCode.E))
         {
             if (isColiding && !playerInsideCar && !seatedPlayers.Contains(NetworkManager.Singleton.LocalClientId))
@@ -333,8 +325,6 @@ public class CarController : NetworkBehaviour
     }
     private void EnterCar()
     {
-        if (!IsOwner) return;
-
         int seatIndex = GetNextAvailableSeat();
         if (seatIndex == -1)
         {
