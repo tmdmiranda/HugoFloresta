@@ -18,7 +18,7 @@ public class VoiceReceiver : MonoBehaviour
     private void Awake()
     {
         audioSource = GetComponent<AudioSource>();
-        audioSource.spatialBlend = 0f;
+        audioSource.spatialBlend = 1f;
         audioSource.playOnAwake = false;
         audioSource.volume = playbackVolume;
 

@@ -98,7 +98,7 @@ public class VoiceTransmitter : NetworkBehaviour
     [ClientRpc]
     private void ReceiveVoiceDataClientRpc(byte[] voiceData, ulong senderId)
     {
-        //if (IsOwner) return;
+        if (IsOwner) return;
 
         float[] audioData = new float[voiceData.Length / sizeof(float)];
         Buffer.BlockCopy(voiceData, 0, audioData, 0, voiceData.Length);
