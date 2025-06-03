@@ -23,15 +23,8 @@ public class CarSoundController : MonoBehaviour
     }
 
     void Update()
-    {        
-        if (carController.playerInsideCar)
-        {
-            EngineSound();
-        }
-        else
-        {
-            carSound.pitch = 0f;
-        }        
+    {
+        EngineSound();   
     }
 
     void EngineSound()
