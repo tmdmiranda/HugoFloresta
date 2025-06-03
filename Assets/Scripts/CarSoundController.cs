@@ -18,16 +18,22 @@ public class CarSoundController : MonoBehaviour
 
     void Start()
     {
-        if (carController.playerInsideCar)
-        {
-            carSound = GetComponent<AudioSource>();
-            rb = GetComponent<Rigidbody>();
-        }
+        carSound = GetComponent<AudioSource>();
+        rb = GetComponent<Rigidbody>();
     }
 
     void Update()
     {
-        EngineSound();
+        // Not checking 
+        if (carController.playerInsideCar)
+        {
+            EngineSound();
+        }
+        else
+        {
+            carSound.pitch = 0f;
+        }
+        
     }
 
     void EngineSound()
