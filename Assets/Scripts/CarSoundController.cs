@@ -23,8 +23,7 @@ public class CarSoundController : MonoBehaviour
     }
 
     void Update()
-    {
-        // Not checking 
+    {        
         if (carController.playerInsideCar)
         {
             EngineSound();
@@ -32,8 +31,7 @@ public class CarSoundController : MonoBehaviour
         else
         {
             carSound.pitch = 0f;
-        }
-        
+        }        
     }
 
     void EngineSound()

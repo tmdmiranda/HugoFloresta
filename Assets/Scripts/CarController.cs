@@ -128,7 +128,6 @@ public class CarController : NetworkBehaviour
 
             if (seatIndex == 0) // Driver seat
             {
-                playerInsideCar = true;
                 GetComponent<CarInputHandler>().enabled = true;
             }
         }
@@ -287,6 +286,7 @@ public class CarController : NetworkBehaviour
         {
             if (isColiding && !playerInsideCar && !seatedPlayers.Contains(NetworkManager.Singleton.LocalClientId))
             {
+                playerInsideCar = true;
                 EnterCar();
             }
             else if (playerInsideCar || seatedPlayers.Contains(NetworkManager.Singleton.LocalClientId))
@@ -478,6 +478,7 @@ public class CarController : NetworkBehaviour
         if (Physics.Raycast(exitPoint.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 2f))
         {
             exitPosition.y = hit.point.y + 0.2f;
+            playerInsideCar = false;
         }
 
         ExitCarServerRpc(exitPosition);
