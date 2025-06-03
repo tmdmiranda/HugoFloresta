@@ -1,7 +1,6 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
-
 public class TopDownViewInteract : MonoBehaviour
 {
     [Header("UI Settings")]
@@ -13,6 +12,7 @@ public class TopDownViewInteract : MonoBehaviour
     public GameObject Maincamera;
     public int startCounter = 0;
     public bool inGame = false;
+
 
     private void Start()
     {

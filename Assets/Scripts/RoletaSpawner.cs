@@ -2,45 +2,58 @@ using UnityEngine;
 using UnityEngine.Events;
 
 
-public class RoletaSpawner : MonoBehaviour
+public class roletaSpawner : MonoBehaviour
 {
-    [SerializeField] private GameObject[] spawnPositions;
-    [SerializeField] private GameObject Roleta;
-    private UnityEvent<Vector3,Quaternion, bool> OnObjectSpawned;
+    [SerializeField] private Transform[] spawnPoints;
+    [SerializeField] private GameObject roletaPrefab;
+    private UnityEvent<Vector3, Quaternion, bool> OnObjectSpawned;
     private int startObjectIndex;
-    bool isSpawned, wasUsed;
-    private Vector3 startPos;
-    private Quaternion startRot;
+
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        if (OnObjectSpawned == null)
-            OnObjectSpawned = new UnityEvent<Vector3, Quaternion, bool>();
+       // if (OnObjectSpawned == null)
+       //     OnObjectSpawned = new UnityEvent<Vector3, Quaternion, bool>();
 
-        OnObjectSpawned?.AddListener(SpawnM);
-        startObjectIndex = Random.Range(0, spawnPositions.Length);
+       // OnObjectSpawned?.AddListener(SpawnM);
+       // startObjectIndex = Random.Range(0, spawnPositions.Length);
 
-        startPos = spawnPositions[startObjectIndex].transform.position;
-        startRot = spawnPositions[startObjectIndex].transform.rotation;
+       // startPos = spawnPositions[startObjectIndex].transform.position;
+       // startRot = spawnPositions[startObjectIndex].transform.rotation;
 
-        Debug.Log("" + startObjectIndex);
-        
     }
 
     // Update is called once per frame
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.K))
-            OnObjectSpawned?.Invoke(startPos, startRot, isSpawned);
+            //        OnObjectSpawned?.Invoke(startPos, startRot, isSpawned);
+            SpawnNewroleta();
     }
 
     void SpawnM(Vector3 obj, Quaternion Rot, bool isSpawned)
     {
-        Instantiate(Roleta, obj, Rot);
+        Instantiate(roletaPrefab, obj, Rot);
 
         Debug.Log($"pos: {obj}, rot: {Rot}, bool: {isSpawned}");
     }
 
+    
+    public void SpawnNewroleta()
+    {
+        if (roletaPrefab == null) return; // e debug.log
+
+        if (spawnPoints == null || spawnPoints.Length == 0) return; // e debug.log
+ 
+        int randomIndex = Random.Range(0, spawnPoints.Length);
+        Transform selectedSpawnPoint = spawnPoints[randomIndex];
+
+        GameObject newInstance = Instantiate(roletaPrefab, selectedSpawnPoint.position, selectedSpawnPoint.rotation);
+        
+        newInstance.name = $"{roletaPrefab.name}_SpawnPoint_{randomIndex}"; // acho que isto ordena no unity?? Pode n ser preciso
+
+        Debug.Log($"spawned '{roletaPrefab.name}' '{selectedSpawnPoint.name}'.");
+    }
 
 }
