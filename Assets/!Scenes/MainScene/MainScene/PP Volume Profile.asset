@@ -15,10 +15,10 @@ MonoBehaviour:
   active: 1
   temperature:
     m_OverrideState: 1
-    m_Value: 11
+    m_Value: 9
   tint:
     m_OverrideState: 1
-    m_Value: 15
+    m_Value: 21
 --- !u!114 &-7496968771378910874
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -34,7 +34,7 @@ MonoBehaviour:
   active: 1
   intensity:
     m_OverrideState: 1
-    m_Value: 0.69
+    m_Value: 0.415
 --- !u!114 &-7407995224049472917
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -112,22 +112,22 @@ MonoBehaviour:
     m_Value: 1
   threshold:
     m_OverrideState: 1
-    m_Value: 0.34
+    m_Value: 0.18
   intensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.22
   scatter:
     m_OverrideState: 1
-    m_Value: 0.711
+    m_Value: 0.295
   clamp:
     m_OverrideState: 1
-    m_Value: 65472
+    m_Value: 65413.18
   tint:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   highQualityFiltering:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   downscale:
     m_OverrideState: 1
     m_Value: 0
@@ -156,19 +156,19 @@ MonoBehaviour:
   active: 1
   postExposure:
     m_OverrideState: 1
-    m_Value: -4.61
+    m_Value: -2.53
   contrast:
     m_OverrideState: 1
     m_Value: -37
   colorFilter:
     m_OverrideState: 1
-    m_Value: {r: 1.319508, g: 1.319508, b: 1.319508, a: 1}
+    m_Value: {r: 1.1353015, g: 1.1353015, b: 1.1353015, a: 1}
   hueShift:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 4
   saturation:
     m_OverrideState: 1
-    m_Value: -11
+    m_Value: 0
 --- !u!114 &-6284023640642919054
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -736,7 +736,7 @@ MonoBehaviour:
     m_Value: 4
   chromaticAbberationIntensity:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 0
 --- !u!114 &3584308296084298819
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -777,13 +777,13 @@ MonoBehaviour:
   active: 1
   type:
     m_OverrideState: 1
-    m_Value: 9
+    m_Value: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 0.475
+    m_Value: 0
   response:
     m_OverrideState: 1
-    m_Value: 0.78
+    m_Value: 0
   texture:
     m_OverrideState: 1
     m_Value: {fileID: 0}
