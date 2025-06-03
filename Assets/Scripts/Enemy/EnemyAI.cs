@@ -26,17 +26,14 @@ public class EnemyAI : NetworkBehaviour
     private Coroutine behaviorCoroutine; // Referência à corrotina principal de comportamento
     private float currentSpeed; // Velocidade atual do inimigo (usada para transições suaves)
     private bool isChasing = false; // Indica se o inimigo está atualmente a perseguir um jogador
-    private NetworkVariable<Vector3> networkPosition = new NetworkVariable<Vector3>(); // Posição sincronizada em rede
-    private NetworkVariable<Quaternion> networkRotation = new NetworkVariable<Quaternion>(); // Rotação sincronizada em rede
 
     // Método chamado ao iniciar o objeto
     void Start()
     {
-        // Se não for o servidor, subscreve aos eventos de alteração de posição e rotação
+        // Se não for o servidor, desativa o script
         if (!IsServer)
         {
-            networkPosition.OnValueChanged += OnPositionChanged;
-            networkRotation.OnValueChanged += OnRotationChanged;
+            enabled = false;
             return;
         }
 
@@ -56,13 +53,8 @@ public class EnemyAI : NetworkBehaviour
     // Método chamado a cada frame do jogo
     void Update()
     {
-        // Se não for o servidor, interpola a posição e rotação recebidas pela rede
-        if (!IsServer)
-        {
-            transform.position = Vector3.Lerp(transform.position, networkPosition.Value, Time.deltaTime * 10f);
-            transform.rotation = Quaternion.Slerp(transform.rotation, networkRotation.Value, Time.deltaTime * 10f);
-            return;
-        }
+        // Só o servidor executa a lógica de movimento
+        if (!IsServer) return;
 
         // Procura o jogador mais próximo
         GameObject nearestPlayer = FindClosestPlayer();
@@ -75,7 +67,7 @@ public class EnemyAI : NetworkBehaviour
                 if (agent != null && agent.isOnNavMesh)
                 {
                     agent.SetDestination(nearestPlayer.transform.position);
-                    agent.speed = speed;
+                    agent.speed = speed + 200f;
                 }
             }
             // Se estiver suficientemente perto, para o movimento
@@ -88,32 +80,8 @@ public class EnemyAI : NetworkBehaviour
             }
         }
         // Se não encontrar nenhum jogador, patrulha/anda aleatoriamente
-        else
-        {
-            Wander();
-        }
-
-        // Atualiza as variáveis de rede apenas quando há alterações significativas
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
-        {
-            if (Vector3.Distance(networkPosition.Value, transform.position) > 0.1f)
-            {
-                networkPosition.Value = transform.position;
-            }
-
-            if (Quaternion.Angle(networkRotation.Value, transform.rotation) > 1f)
-            {
-                networkRotation.Value = transform.rotation;
-            }
-        }
+        else Wander();
     }
-
-    // Evento chamado quando a posição de rede é alterada (apenas clientes)
-    void OnPositionChanged(Vector3 oldPos, Vector3 newPos){}
-
-
-    // Evento chamado quando a rotação de rede é alterada (apenas clientes)
-    void OnRotationChanged(Quaternion oldRot, Quaternion newRot){}
 
     // Configura os parâmetros do NavMeshAgent conforme as definições públicas
     void ConfigureAgent()

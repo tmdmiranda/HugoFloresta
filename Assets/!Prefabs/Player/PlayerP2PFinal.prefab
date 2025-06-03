@@ -236,7 +236,7 @@ Camera:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
+  m_TargetTexture: {fileID: 8400000, guid: eef1095182292154ca688241787e12a0, type: 2}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
@@ -567,7 +567,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  sampleRate: 16000
+  chunkSize: 1024
   pushToTalkKey: 118
+  voiceVolume: 1
 --- !u!114 &909864975159176091
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -580,6 +583,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b953b6203b0528d41a2162d9d20d2c85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playbackVolume: 0.8
+  bufferDuration: 0.3
+  minBufferToPlay: 0.05
 --- !u!82 &4651510207227892111
 AudioSource:
   m_ObjectHideFlags: 0
