@@ -29,7 +29,8 @@ public class EnemyAI : NetworkBehaviour
     private NetworkVariable<Vector3> networkPosition = new NetworkVariable<Vector3>(); // Posição sincronizada em rede
     private NetworkVariable<Quaternion> networkRotation = new NetworkVariable<Quaternion>(); // Rotação sincronizada em rede
 
-    // Método chamado ao iniciar o objeto    void Start()
+    // Método chamado ao iniciar o objeto
+    void Start()
     {
         // Se não for o servidor, subscreve aos eventos de alteração de posição e rotação
         if (!IsServer)
@@ -108,11 +109,11 @@ public class EnemyAI : NetworkBehaviour
     }
 
     // Evento chamado quando a posição de rede é alterada (apenas clientes)
-    //void OnPositionChanged(Vector3 oldPos, Vector3 newPos){}
+    void OnPositionChanged(Vector3 oldPos, Vector3 newPos){}
 
 
     // Evento chamado quando a rotação de rede é alterada (apenas clientes)
-    //void OnRotationChanged(Quaternion oldRot, Quaternion newRot){}
+    void OnRotationChanged(Quaternion oldRot, Quaternion newRot){}
 
     // Configura os parâmetros do NavMeshAgent conforme as definições públicas
     void ConfigureAgent()
