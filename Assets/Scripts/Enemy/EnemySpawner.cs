@@ -2,42 +2,49 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.AI;
 
+// Classe responsável por gerar (spawnar) inimigos no cenário
 public class EnemySpawner : NetworkBehaviour
 {
     [Header("Spawn Settings")]
-    public GameObject enemyPrefab;
-    public int numberOfEnemies = 5;
-    public float spawnRadius = 20f;
-    public float minDistanceBetweenEnemies = 2f;
+    public GameObject enemyPrefab; // Prefab do inimigo a ser instanciado
+    public int numberOfEnemies = 5; // Número de inimigos a spawnar
+    public float spawnRadius = 20f; // Raio máximo para spawnar inimigos em torno do ponto central
+    public float minDistanceBetweenEnemies = 2f; // Distância mínima entre inimigos ao spawnar
     [Tooltip("Layer mask for collision detection (should include enemy layer)")]
-    public LayerMask spawnLayerMask = -1;
-    public float navMeshSampleRange = 10f;
+    public LayerMask spawnLayerMask = -1; // Máscara de camadas para detetar colisões ao spawnar
+    public float navMeshSampleRange = 10f; // Raio para amostragem de posições válidas no NavMesh
 
     [Header("Debug")]
-    public bool enableDebugLogs = true;
+    public bool enableDebugLogs = true; // Ativa/desativa logs de debug
 
+    // Método chamado quando o objeto é inicializado na rede
     public void OnNetworkSpawn()
     {
+        // Apenas o servidor pode spawnar inimigos
         if (!IsServer) return;
 
+        // Verifica se a NavMesh está pronta
         if (!IsNavMeshReady())
         {
             Debug.LogError("NavMesh not ready! Check your NavMesh baking.");
             return;
         }
 
+        // Inicia o spawn dos inimigos
         SpawnEnemies();
     }
 
+    // Verifica se o NavMesh está disponível e pronto para uso
     private bool IsNavMeshReady()
     {
         return NavMesh.CalculateTriangulation().vertices.Length > 0;
     }
 
+    // Método principal para spawnar todos os inimigos
     private void SpawnEnemies()
     {
-        int successfullySpawned = 0;
-        var navMeshData = NavMesh.CalculateTriangulation();
+        int successfullySpawned = 0; // Contador de inimigos spawnados com sucesso
+        var navMeshData = NavMesh.CalculateTriangulation(); // Dados do NavMesh
 
         for (int i = 0; i < numberOfEnemies; i++)
         {
@@ -45,11 +52,11 @@ public class EnemySpawner : NetworkBehaviour
             Vector3 spawnPos = Vector3.zero;
             bool foundPosition = false;
 
-            // Randomly select a vertex from the NavMesh triangulation
+            // Seleciona aleatoriamente um vértice do NavMesh para tentar spawnar
             int randomIndex = UnityEngine.Random.Range(0, navMeshData.vertices.Length);
             spawnPos = navMeshData.vertices[randomIndex];
 
-            // Check for collisions with existing enemies
+            // Verifica colisão com outros inimigos já existentes
             bool hasCollision = Physics.CheckSphere(spawnPos, minDistanceBetweenEnemies, spawnLayerMask);
             if (!hasCollision)
             {
@@ -58,6 +65,7 @@ public class EnemySpawner : NetworkBehaviour
 
             if (foundPosition)
             {
+                // Spawna o inimigo na posição encontrada
                 SpawnSingleEnemy(spawnPos);
                 successfullySpawned++;
                 if (enableDebugLogs) Debug.Log($"Successfully spawned enemy at {spawnPos}");
@@ -71,39 +79,10 @@ public class EnemySpawner : NetworkBehaviour
         Debug.Log($"Spawn summary: {successfullySpawned}/{numberOfEnemies} enemies spawned");
     }
 
-
-    /*private Vector3 FindValidSpawnPosition(int attemptNumber)
-    {
-        // Generate random point in circle
-        Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
-        Vector3 randomPoint = transform.position + new Vector3(randomCircle.x, 10f, randomCircle.y);
-        if (enableDebugLogs) if (enableDebugLogs) Debug.Log($"Attempt {attemptNumber}: Trying point {randomPoint}");
-
-        // Find nearest NavMesh position
-        if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, navMeshSampleRange, NavMesh.AllAreas))
-        {
-            if (enableDebugLogs) if (enableDebugLogs) Debug.Log($"Found NavMesh position at {hit.position} (distance: {hit.distance})");
-
-            // Check for collisions with existing enemies
-            bool hasCollision = Physics.CheckSphere(hit.position, minDistanceBetweenEnemies, spawnLayerMask);
-            if (enableDebugLogs) if (enableDebugLogs) Debug.Log($"Collision check: {(hasCollision ? "FAILED" : "PASSED")}");
-
-            if (!hasCollision)
-            {
-                return hit.position;
-            }
-        }
-        else
-        {
-            if (enableDebugLogs) if (enableDebugLogs) Debug.Log("No NavMesh found near this point");
-        }
-
-        return Vector3.zero;
-    }*/
-
+    // Spawna um único inimigo numa posição específica
     private void SpawnSingleEnemy(Vector3 position)
     {
-        // Ensure the position is on the NavMesh before spawning
+        // Garante que a posição está no NavMesh antes de spawnar
         if (NavMesh.SamplePosition(position, out NavMeshHit hit, 1f, NavMesh.AllAreas))
         {
             position = hit.position;
@@ -114,11 +93,12 @@ public class EnemySpawner : NetworkBehaviour
             return;
         }
 
+        // Instancia o inimigo e garante que tem componente de rede
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
         if (netObj != null)
         {
-            netObj.Spawn();
+            netObj.Spawn(); // Torna o inimigo visível para todos os jogadores
             Debug.Log($"Enemy spawned successfully at {position}");
         }
         else
@@ -128,11 +108,12 @@ public class EnemySpawner : NetworkBehaviour
         }
     }
 
+    // Desenha gizmos no editor para visualizar áreas de spawn
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position, spawnRadius);
+        Gizmos.DrawWireSphere(transform.position, spawnRadius); // Raio de spawn
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, navMeshSampleRange);
+        Gizmos.DrawWireSphere(transform.position, navMeshSampleRange); // Raio de amostragem do NavMesh
     }
 }

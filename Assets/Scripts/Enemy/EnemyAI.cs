@@ -6,39 +6,40 @@ using System.Collections;
 public class EnemyAI : NetworkBehaviour
 {
     [Header("Movement Settings")]
-    public float speed = 3f;
-    public float rotationSpeed = 120f;
-    public float acceleration = 8f;
-    public float stoppingDistance = 1f;
+    public float speed = 3f; // Velocidade de movimento do inimigo
+    public float rotationSpeed = 120f; // Velocidade de rotação do inimigo
+    public float acceleration = 8f; // Aceleração do inimigo ao iniciar movimento
+    public float stoppingDistance = 1f; // Distância mínima para parar ao aproximar-se do alvo
 
     [Header("Detection Settings")]
-    public float detectionRange = 10f;
-    public float followRefreshRate = 0.5f;
-    public LayerMask obstacleLayerMask = -1; // What layers block line of sight
+    public float detectionRange = 10f; // Raio de deteção para encontrar jogadores
+    public float followRefreshRate = 0.5f; // Intervalo de atualização ao seguir o jogador
+    public LayerMask obstacleLayerMask = -1; // Máscara de camadas que bloqueiam a linha de visão
 
     [Header("Wander Settings")]
-    public float wanderRadius = 5f;
-    public float wanderTimer = 5f;
-    public float minWanderDistance = 2f;
+    public float wanderRadius = 5f; // Raio máximo para escolher um ponto aleatório para patrulhar
+    public float wanderTimer = 5f; // Tempo máximo a patrulhar antes de escolher novo destino
+    public float minWanderDistance = 2f; // Distância mínima para garantir que o ponto de patrulha não é demasiado próximo
 
-    private NavMeshAgent agent;
-    private bool isAgentReady = false;
-    private Coroutine behaviorCoroutine;
-    private float currentSpeed;
-    private bool isChasing = false;
-    private NetworkVariable<Vector3> networkPosition = new NetworkVariable<Vector3>();
-    private NetworkVariable<Quaternion> networkRotation = new NetworkVariable<Quaternion>();
+    private NavMeshAgent agent; // Referência ao componente de navegação do Unity
+    private bool isAgentReady = false; // Indica se o agente está pronto para ser usado
+    private Coroutine behaviorCoroutine; // Referência à corrotina principal de comportamento
+    private float currentSpeed; // Velocidade atual do inimigo (usada para transições suaves)
+    private bool isChasing = false; // Indica se o inimigo está atualmente a perseguir um jogador
+    private NetworkVariable<Vector3> networkPosition = new NetworkVariable<Vector3>(); // Posição sincronizada em rede
+    private NetworkVariable<Quaternion> networkRotation = new NetworkVariable<Quaternion>(); // Rotação sincronizada em rede
 
-    void Start()
+    // Método chamado ao iniciar o objeto    void Start()
     {
+        // Se não for o servidor, subscreve aos eventos de alteração de posição e rotação
         if (!IsServer)
         {
-            // For clients, sync position with server values
             networkPosition.OnValueChanged += OnPositionChanged;
             networkRotation.OnValueChanged += OnRotationChanged;
             return;
         }
 
+        // Obtém o componente NavMeshAgent associado ao inimigo
         agent = GetComponent<NavMeshAgent>();
         if (agent == null)
         {
@@ -46,24 +47,28 @@ public class EnemyAI : NetworkBehaviour
             return;
         }
 
+        // Configura o agente e inicia a corrotina de inicialização
         ConfigureAgent();
         StartCoroutine(InitializeAgent());
     }
 
+    // Método chamado a cada frame do jogo
     void Update()
     {
+        // Se não for o servidor, interpola a posição e rotação recebidas pela rede
         if (!IsServer)
         {
-            // Smoothly interpolate to network position for clients
             transform.position = Vector3.Lerp(transform.position, networkPosition.Value, Time.deltaTime * 10f);
             transform.rotation = Quaternion.Slerp(transform.rotation, networkRotation.Value, Time.deltaTime * 10f);
             return;
         }
 
+        // Procura o jogador mais próximo
         GameObject nearestPlayer = FindClosestPlayer();
         if (nearestPlayer != null)
         {
             float dist = Vector3.Distance(transform.position, nearestPlayer.transform.position);
+            // Se estiver longe o suficiente, persegue o jogador
             if (dist > stoppingDistance)
             {
                 if (agent != null && agent.isOnNavMesh)
@@ -72,6 +77,7 @@ public class EnemyAI : NetworkBehaviour
                     agent.speed = speed;
                 }
             }
+            // Se estiver suficientemente perto, para o movimento
             else
             {
                 if (agent != null && agent.isOnNavMesh)
@@ -80,12 +86,13 @@ public class EnemyAI : NetworkBehaviour
                 }
             }
         }
+        // Se não encontrar nenhum jogador, patrulha/anda aleatoriamente
         else
         {
             Wander();
         }
 
-        // Update network variables for clients only when there are actual changes
+        // Atualiza as variáveis de rede apenas quando há alterações significativas
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
         {
             if (Vector3.Distance(networkPosition.Value, transform.position) > 0.1f)
@@ -100,16 +107,14 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
-    void OnPositionChanged(Vector3 oldPos, Vector3 newPos)
-    {
-        // Client-side position update handled in Update method
-    }
+    // Evento chamado quando a posição de rede é alterada (apenas clientes)
+    //void OnPositionChanged(Vector3 oldPos, Vector3 newPos){}
 
-    void OnRotationChanged(Quaternion oldRot, Quaternion newRot)
-    {
-        // Client-side rotation update handled in Update method
-    }
 
+    // Evento chamado quando a rotação de rede é alterada (apenas clientes)
+    //void OnRotationChanged(Quaternion oldRot, Quaternion newRot){}
+
+    // Configura os parâmetros do NavMeshAgent conforme as definições públicas
     void ConfigureAgent()
     {
         agent.speed = speed;
@@ -122,6 +127,7 @@ public class EnemyAI : NetworkBehaviour
         agent.updateUpAxis = false;
     }
 
+    // Corrotina que tenta colocar o inimigo numa posição válida do NavMesh
     IEnumerator InitializeAgent()
     {
         int attempts = 0;
@@ -142,6 +148,7 @@ public class EnemyAI : NetworkBehaviour
         behaviorCoroutine = StartCoroutine(AIBehaviorRoutine());
     }
 
+    // Corrotina principal que gere o comportamento do inimigo (perseguir ou patrulhar)
     IEnumerator AIBehaviorRoutine()
     {
         while (isAgentReady && agent != null && agent.isOnNavMesh)
@@ -169,7 +176,7 @@ public class EnemyAI : NetworkBehaviour
                 yield return StartCoroutine(Wander());
             }
 
-            yield return new WaitForSeconds(0.1f); // Small delay to prevent excessive processing
+            yield return new WaitForSeconds(0.1f);
         }
         
         if (agent == null || !agent.isOnNavMesh)
@@ -178,6 +185,7 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
+    // Corrotina que faz o inimigo perseguir o jogador enquanto este estiver ao alcance
     IEnumerator ChasePlayer(GameObject player)
     {
         float lastUpdateTime = Time.time;
@@ -185,6 +193,7 @@ public class EnemyAI : NetworkBehaviour
         while (player != null && agent != null && agent.isOnNavMesh &&
                Vector3.Distance(transform.position, player.transform.position) <= detectionRange)
         {
+            // Atualiza o destino do agente a cada intervalo definido
             if (Time.time - lastUpdateTime >= followRefreshRate)
             {
                 if (agent.isActiveAndEnabled)
@@ -194,6 +203,7 @@ public class EnemyAI : NetworkBehaviour
                 lastUpdateTime = Time.time;
             }
 
+            // Faz a transição suave da velocidade
             currentSpeed = Mathf.Lerp(currentSpeed, speed, Time.deltaTime * 2);
             if (agent.isActiveAndEnabled)
             {
@@ -204,24 +214,29 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
+    // Corrotina que faz o inimigo patrulhar/andar aleatoriamente
     IEnumerator Wander()
     {
         if (agent == null || !agent.isOnNavMesh) yield break;
 
+        // Escolhe um ponto aleatório válido
         Vector3 wanderPoint = RandomNavSphere(transform.position, wanderRadius, -1);
 
+        // Garante que o ponto não é demasiado próximo
         while (Vector3.Distance(transform.position, wanderPoint) < minWanderDistance)
         {
             wanderPoint = RandomNavSphere(transform.position, wanderRadius, -1);
             yield return null;
         }
 
+        // Define o destino do agente
         if (agent.isActiveAndEnabled)
         {
             agent.SetDestination(wanderPoint);
         }
         float startTime = Time.time;
 
+        // Acelera gradualmente
         currentSpeed = 0;
         float accelerateTime = 0.5f;
         float elapsedTime = 0;
@@ -234,6 +249,7 @@ public class EnemyAI : NetworkBehaviour
             yield return null;
         }
 
+        // Mantém a velocidade enquanto patrulha
         while (agent != null && agent.isActiveAndEnabled &&
                Time.time - startTime < wanderTimer &&
                agent.pathPending == false &&
@@ -244,6 +260,7 @@ public class EnemyAI : NetworkBehaviour
             yield return null;
         }
 
+        // Desacelera gradualmente
         elapsedTime = 0;
         float decelerateTime = 0.3f;
         float startDecelSpeed = currentSpeed;
@@ -256,10 +273,11 @@ public class EnemyAI : NetworkBehaviour
             yield return null;
         }
 
+        // Espera um tempo aleatório antes de escolher novo destino
         yield return new WaitForSeconds(Random.Range(0.2f, 0.5f));
     }
 
-    // Check if there's a clear line of sight to the target
+    // Verifica se existe linha de visão direta para o alvo (sem obstáculos)
     bool HasLineOfSight(GameObject target)
     {
         if (target == null) return false;
@@ -267,18 +285,19 @@ public class EnemyAI : NetworkBehaviour
         Vector3 directionToTarget = target.transform.position - transform.position;
         float distanceToTarget = directionToTarget.magnitude;
 
-        // Cast a ray from enemy to player
+        // Lança um raio do inimigo até ao jogador para verificar obstáculos
         RaycastHit hit;
         if (Physics.Raycast(transform.position + Vector3.up * 0.5f, directionToTarget.normalized, out hit, distanceToTarget, obstacleLayerMask))
         {
-            // If the ray hits something other than the target, line of sight is blocked
+            // Se o raio atingir algo diferente do alvo, a linha de visão está bloqueada
             return hit.collider.gameObject == target;
         }
 
-        // No obstacles detected, line of sight is clear
+        // Sem obstáculos, linha de visão está livre
         return true;
     }
 
+    // Procura o jogador mais próximo que esteja ao alcance e visível
     GameObject FindClosestPlayer()
     {
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
@@ -299,6 +318,7 @@ public class EnemyAI : NetworkBehaviour
         return closest;
     }
 
+    // Gera um ponto aleatório válido no NavMesh dentro de um raio
     Vector3 RandomNavSphere(Vector3 origin, float dist, int layermask)
     {
         Vector3 randDirection = Random.insideUnitSphere * dist;
@@ -310,6 +330,7 @@ public class EnemyAI : NetworkBehaviour
         return navHit.position;
     }
 
+    // Tenta colocar o inimigo numa posição válida do NavMesh
     void PlaceEnemyOnNavMesh()
     {
         if (agent == null) return;
@@ -322,19 +343,21 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
+    // Método chamado quando o inimigo é destruído (por exemplo: morre)
     new void OnDestroy()
     {
         if (behaviorCoroutine != null)
             StopCoroutine(behaviorCoroutine);
     }
 
+    // Desenha gizmos no editor
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, detectionRange);
+        Gizmos.DrawWireSphere(transform.position, detectionRange); // Raio de deteção
 
         Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, wanderRadius);
+        Gizmos.DrawWireSphere(transform.position, wanderRadius); // Raio de patrulha
 
         /*Gizmos.color = Color.green;
         Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundCheckDistance);*/
