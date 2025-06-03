@@ -14,6 +14,7 @@ public class EnemyAI : NetworkBehaviour
     [Header("Detection Settings")]
     public float detectionRange = 10f;
     public float followRefreshRate = 0.5f;
+    public LayerMask obstacleLayerMask = -1; // What layers block line of sight
 
     [Header("Wander Settings")]
     public float wanderRadius = 5f;
@@ -258,6 +259,26 @@ public class EnemyAI : NetworkBehaviour
         yield return new WaitForSeconds(Random.Range(0.2f, 0.5f));
     }
 
+    // Check if there's a clear line of sight to the target
+    bool HasLineOfSight(GameObject target)
+    {
+        if (target == null) return false;
+
+        Vector3 directionToTarget = target.transform.position - transform.position;
+        float distanceToTarget = directionToTarget.magnitude;
+
+        // Cast a ray from enemy to player
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, directionToTarget.normalized, out hit, distanceToTarget, obstacleLayerMask))
+        {
+            // If the ray hits something other than the target, line of sight is blocked
+            return hit.collider.gameObject == target;
+        }
+
+        // No obstacles detected, line of sight is clear
+        return true;
+    }
+
     GameObject FindClosestPlayer()
     {
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
@@ -269,7 +290,7 @@ public class EnemyAI : NetworkBehaviour
         foreach (var obj in players)
         {
             float dist = Vector3.Distance(transform.position, obj.transform.position);
-            if (dist < minDist && dist <= detectionRange)
+            if (dist < minDist && dist <= detectionRange && HasLineOfSight(obj))
             {
                 minDist = dist;
                 closest = obj;
