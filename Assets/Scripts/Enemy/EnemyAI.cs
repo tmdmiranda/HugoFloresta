@@ -160,7 +160,8 @@ public class EnemyAI : NetworkBehaviour
         float lastUpdateTime = Time.time;
 
         while (player != null && agent != null && agent.isOnNavMesh &&
-               Vector3.Distance(transform.position, player.transform.position) <= detectionRange)
+               Vector3.Distance(transform.position, player.transform.position) <= detectionRange &&
+               HasLineOfSight(player))
         {
             // Atualiza o destino do agente a cada intervalo definido
             if (Time.time - lastUpdateTime >= followRefreshRate)

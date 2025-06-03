@@ -1,14 +1,9 @@
 fileFormatVersion: 2
-guid: 58c6d081bdf18924c80dee3f632fda74
+guid: 94a5bac36a9402244bf90d6b768c0685
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects:
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Uv Grid
-    second: {fileID: 2100000, guid: 4c6043815286feb6d98d530f3f996b25, type: 2}
+  externalObjects: {}
   materials:
     materialImportMode: 2
     materialName: 0
