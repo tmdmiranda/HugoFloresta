@@ -93,8 +93,12 @@ public class EnemySpawner : NetworkBehaviour
             return;
         }
 
+        // Calcula a direção para o inimigo olhar (do spawner para a posição de spawn)
+        Vector3 direction = (position - transform.position).normalized;
+        Quaternion rotation = Quaternion.LookRotation(direction);
+
         // Instancia o inimigo e garante que tem componente de rede
-        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        GameObject enemy = Instantiate(enemyPrefab, position, rotation);
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
         if (netObj != null)
         {
