@@ -41,6 +41,44 @@ public class P2P_Manager : NetworkBehaviour
     private GameObject lobbyPanelInstance;
     [SerializeField] private EnemySpawner enemySpawner;
 
+    public static P2P_Manager Instance { get; private set; }
+
+    public ulong LocalClientId { get; private set; }
+    public NetworkObject LocalPlayerObject { get; private set; }
+
+    private readonly Dictionary<ulong, NetworkObject> playerObjects = new Dictionary<ulong, NetworkObject>();
+
+
+
+    public override void OnNetworkSpawn()
+    {
+        if (IsClient && IsOwner)
+        {
+            LocalClientId = NetworkManager.Singleton.LocalClientId;
+        }
+
+
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+
+        CreateLobbyUI();
+        playerData.OnListChanged += OnPlayerListChanged;
+    }
+
+
+
+
+
+    public NetworkObject GetPlayerObject(ulong clientId)
+    {
+        playerObjects.TryGetValue(clientId, out var obj);
+        return obj;
+    }
+
+    public bool IsLocalPlayer(NetworkObject obj)
+    {
+        return obj != null && obj == LocalPlayerObject;
+    }
     [SerializeField] GameObject vanPrefab;
 
     public struct PlayerLobbyData : INetworkSerializable, IEquatable<PlayerLobbyData>
@@ -205,7 +243,8 @@ public class P2P_Manager : NetworkBehaviour
                 continue;
             }
 
-            netObj.SpawnWithOwnership(clientId, true);
+            netObj.SpawnWithOwnership(clientId);
+
 
             // Set player name
             string playerName = GetPlayerName(clientId);
@@ -271,16 +310,7 @@ public class P2P_Manager : NetworkBehaviour
 
 
 
-    public override void OnNetworkSpawn()
-    {
-        if (IsServer)
-        {
-            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-        }
-        CreateLobbyUI();
-        playerData.OnListChanged += OnPlayerListChanged;
-    }
+
 
 
     public override void OnNetworkDespawn()
@@ -294,6 +324,18 @@ public class P2P_Manager : NetworkBehaviour
 
     private void OnClientConnected(ulong clientId)
     {
+
+        var playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+        
+        if (playerObject != null)
+        {
+            playerObjects[clientId] = playerObject;
+
+            if (clientId == NetworkManager.Singleton.LocalClientId)
+            {
+                LocalPlayerObject = playerObject;
+            }
+        }
         Debug.Log($"Client connected: {clientId}");
 
         if (!IsServer)
@@ -375,6 +417,15 @@ public class P2P_Manager : NetworkBehaviour
 
     private void OnClientDisconnected(ulong clientId)
     {
+        if (playerObjects.ContainsKey(clientId))
+        {
+            playerObjects.Remove(clientId);
+        }
+
+        if (clientId == LocalClientId)
+        {
+            LocalPlayerObject = null;
+        }
         if (!IsServer) return;
 
         for (int i = 0; i < playerData.Count; i++)
