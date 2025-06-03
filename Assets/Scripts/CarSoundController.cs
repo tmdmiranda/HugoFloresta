@@ -1,48 +1,43 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(AudioSource), typeof(Rigidbody))]
 public class CarSoundController : MonoBehaviour
 {
     public float minSpeed = 0.3f;
     public float maxSpeed = 40f;
-    private float currentSpeed;
+    public float minPitch = 0.2f;
+    public float maxPitch = 2.0f;
 
     private Rigidbody rb;
     private AudioSource carSound;
-    private CarController carController;
-
-    public float minPitch = 0.2f;
-    public float maxPitch = 41.0f;
-    private float pitchFromCar;
 
     void Start()
     {
-        carSound = GetComponent<AudioSource>();
         rb = GetComponent<Rigidbody>();
+        carSound = GetComponent<AudioSource>();
+
+        // Configure AudioSource for 3D sound
+        carSound.spatialBlend = 1f; // Fully 3D
+        carSound.rolloffMode = AudioRolloffMode.Logarithmic;
+        carSound.minDistance = 5f;
+        carSound.maxDistance = 20f;
+        carSound.loop = true;
+        carSound.playOnAwake = true;
+
+        if (!carSound.isPlaying)
+            carSound.Play();
     }
 
     void Update()
     {
-        EngineSound();   
+        UpdateEngineSound();
     }
 
-    void EngineSound()
+    void UpdateEngineSound()
     {
-        currentSpeed = rb.linearVelocity.magnitude;
-        pitchFromCar = rb.linearVelocity.magnitude / 50f;
+        float speed = rb.linearVelocity.magnitude;
 
-        if (currentSpeed < minSpeed)
-        {
-            carSound.pitch = minPitch;
-        }
-        if (currentSpeed > minSpeed && currentSpeed < maxSpeed)
-        {
-            carSound.pitch = minPitch + pitchFromCar;
-        }
-        if (currentSpeed > maxSpeed)
-        {
-            carSound.pitch = maxPitch;
-        }
+        float pitch = Mathf.Lerp(minPitch, maxPitch, Mathf.InverseLerp(minSpeed, maxSpeed, speed));
+        carSound.pitch = pitch;
     }
 }
