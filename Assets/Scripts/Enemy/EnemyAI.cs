@@ -81,20 +81,6 @@ public class EnemyAI : NetworkBehaviour
         }
         // Se não encontrar nenhum jogador, patrulha/anda aleatoriamente
         else Wander();
-
-        // Atualiza as variáveis de rede apenas quando há alterações significativas
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsList.Count > 0)
-        {
-            if (Vector3.Distance(networkPosition.Value, transform.position) > 0.1f)
-            {
-                networkPosition.Value = transform.position;
-            }
-
-            if (Quaternion.Angle(networkRotation.Value, transform.rotation) > 1f)
-            {
-                networkRotation.Value = transform.rotation;
-            }
-        }
     }
 
     // Configura os parâmetros do NavMeshAgent conforme as definições públicas
