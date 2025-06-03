@@ -186,9 +186,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  speed: 20
-  rotationSpeed: 10
-  acceleration: 20
+  speed: 30
+  rotationSpeed: 200
+  acceleration: 50
   stoppingDistance: 0.1
   detectionRange: 30
   followRefreshRate: 0.01
