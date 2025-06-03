@@ -5779,6 +5779,7 @@ GameObject:
   - component: {fileID: 1732996939}
   - component: {fileID: 1732996940}
   - component: {fileID: 1732996941}
+  - component: {fileID: 1732996942}
   m_Layer: 0
   m_Name: Manager
   m_TagString: Untagged
@@ -5827,6 +5828,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   micDropdown: {fileID: 805266913}
+--- !u!114 &1732996942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1732996938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9f199f7e1da98546b893e5736c24f69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  spawnPositions:
+  - {fileID: 1413339707}
+  - {fileID: 1127404269}
+  Roleta: {fileID: 1277953805}
 --- !u!43 &1768298302
 Mesh:
   m_ObjectHideFlags: 0
