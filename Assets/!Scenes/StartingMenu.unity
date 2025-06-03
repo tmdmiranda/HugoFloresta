@@ -1782,6 +1782,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   navMeshSampleRange: 10
+  enableDebugLogs: 1
 --- !u!114 &2051217700
 MonoBehaviour:
   m_ObjectHideFlags: 0
