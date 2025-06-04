@@ -192,6 +192,7 @@ public class CarController : NetworkBehaviour
         if (playerInsideCar)
         {
             SearchOccupiedSeatsIfLocalPlayerIsSeated();
+            LockPlayerCameraToCar();
         }
     }
 
@@ -221,6 +222,23 @@ public class CarController : NetworkBehaviour
 
         Debug.Log("Preferred seat: " + preferredSeat);
         RequestEnterCarServerRpc(playerNetObj.OwnerClientId, preferredSeat);
+    }
+
+    private void LockPlayerCameraToCar()
+    {
+        if (carCamera == null || playerCameraY == null) return;
+
+        Vector3 carEulerAngles = carCamera.rotation.eulerAngles;
+        Vector3 cameraEulerAngles = playerCameraY.localEulerAngles;
+
+        if (cameraEulerAngles.y > 180f) cameraEulerAngles.y -= 360f;
+        if (carEulerAngles.y > 180f) carEulerAngles.y -= 360f;
+
+        float cameraYRelativeToCar = Mathf.DeltaAngle(carEulerAngles.y, cameraEulerAngles.y);
+        cameraYRelativeToCar = Mathf.Clamp(cameraYRelativeToCar, -90f, 90f);
+
+        float lockedY = carEulerAngles.y + cameraYRelativeToCar;
+        playerCameraY.rotation = Quaternion.Euler(carEulerAngles.x, lockedY, carEulerAngles.z);
     }
 
 
