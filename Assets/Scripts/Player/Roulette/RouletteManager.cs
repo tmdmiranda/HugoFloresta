@@ -26,6 +26,18 @@ public class RouletteManager : NetworkBehaviour
         if (Instance == null) Instance = this;
     }
 
+    public void ReceiveResultFromRodinha(int number)
+    {
+        string color = GetColor(number);
+        Debug.Log($"Received final number from Rodinha: {number} ({color})");
+
+        resultNumber.Value = number;
+        resultColor.Value = color;
+
+        DistributePoints(color);
+    }
+
+
     public void PlaceBet(string color)
     {
         if (!IsClient || !IsOwner) return;

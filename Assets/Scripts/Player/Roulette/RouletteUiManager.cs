@@ -23,6 +23,7 @@ public class RouletteUIManager : MonoBehaviour
         Debug.Log("Placed bet on: " + color);
         // Save bet somewhere (e.g., player script or game manager)
         uiPanel.SetActive(false);
+
     }
 
     private void OnTriggerEnter(Collider other)
@@ -30,6 +31,8 @@ public class RouletteUIManager : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             uiPanel.SetActive(true);
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
         }
     }
 
@@ -38,6 +41,8 @@ public class RouletteUIManager : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             uiPanel.SetActive(false);
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
         }
     }
 }

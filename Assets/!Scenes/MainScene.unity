@@ -2263,7 +2263,7 @@ GameObject:
   - component: {fileID: 810967446}
   - component: {fileID: 810967445}
   - component: {fileID: 810967444}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Terrain_(0.00, 0.00, 1000.00)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4921,13 +4921,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9f199f7e1da98546b893e5736c24f69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnPoints:
-  - {fileID: 649392477}
-  - {fileID: 1262280533}
-  roletaPrefab: {fileID: 4309576151084362030, guid: 8d01455247bae6c45b218c454800a3fc, type: 3}
-  OnRoletaUse:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!43 &1768298302
 Mesh:
   m_ObjectHideFlags: 0
