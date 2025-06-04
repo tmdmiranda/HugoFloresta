@@ -46,6 +46,25 @@ public class FirstPersonController : NetworkBehaviour
 
     [SerializeField] private Animator animator;
 
+    // Networked animation parameters
+    private struct NetworkedAnimationState : INetworkSerializable
+    {
+        public float Speed;
+        public float Horizontal;
+        public float Vertical;
+        public bool IsGrounded;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref Speed);
+            serializer.SerializeValue(ref Horizontal);
+            serializer.SerializeValue(ref Vertical);
+            serializer.SerializeValue(ref IsGrounded);
+        }
+    }
+
+    private NetworkVariable<NetworkedAnimationState> networkedAnimationState = new NetworkVariable<NetworkedAnimationState>();
+
     // Network crouch state
     private NetworkVariable<bool> isCrouchingNetwork = new NetworkVariable<bool>();
 
@@ -64,6 +83,9 @@ public class FirstPersonController : NetworkBehaviour
 
         // Subscribe to crouch state changes
         isCrouchingNetwork.OnValueChanged += OnCrouchStateChanged;
+
+        // Subscribe to animation state changes
+        networkedAnimationState.OnValueChanged += OnAnimationStateChanged;
     }
 
     public override void OnDestroy()
@@ -75,6 +97,14 @@ public class FirstPersonController : NetworkBehaviour
     private void OnCrouchStateChanged(bool previousValue, bool newValue)
     {
         ApplyCrouchState(newValue);
+    }
+
+    private void OnAnimationStateChanged(NetworkedAnimationState previousValue, NetworkedAnimationState newValue)
+    {
+        animator.SetFloat("Speed", newValue.Speed);
+        animator.SetFloat("Horizontal", newValue.Horizontal);
+        animator.SetFloat("Vertical", newValue.Vertical);
+        animator.SetBool("IsGrounded", newValue.IsGrounded);
     }
 
     void Update()
@@ -158,6 +188,34 @@ public class FirstPersonController : NetworkBehaviour
         animator.SetFloat("Vertical", currentAnimationBlend.y);
         animator.SetBool("IsCrouching", isCrouchingNetwork.Value);
         animator.SetBool("IsGrounded", characterController.isGrounded);
+
+        NetworkedAnimationState state = new NetworkedAnimationState
+        {
+            Speed = currentAnimationSpeed,
+            Horizontal = currentAnimationBlend.x,
+            Vertical = currentAnimationBlend.y,
+            IsGrounded = characterController.isGrounded
+        };
+
+        if (state.Speed != networkedAnimationState.Value.Speed ||
+            state.Horizontal != networkedAnimationState.Value.Horizontal ||
+            state.Vertical != networkedAnimationState.Value.Vertical ||
+            state.IsGrounded != networkedAnimationState.Value.IsGrounded)
+        {
+            UpdateAnimationStateServerRpc(state);
+        }
+    }
+
+    [ServerRpc]
+    private void UpdateAnimationStateServerRpc(NetworkedAnimationState state)
+    {
+        UpdateAnimationStateClientRpc(state);
+    }
+
+    [ClientRpc]
+    private void UpdateAnimationStateClientRpc(NetworkedAnimationState state)
+    {
+        networkedAnimationState.Value = state;
     }
 
     private void ApplyHorizontalRotation(float rotationAmount)
