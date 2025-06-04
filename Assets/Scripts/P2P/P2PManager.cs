@@ -21,7 +21,6 @@ using UnityEngine.UIElements;
 using System.Net.NetworkInformation;
 
 
-
 public class P2P_Manager : NetworkBehaviour
 {
     [Header("UI Elements")]
@@ -47,8 +46,6 @@ public class P2P_Manager : NetworkBehaviour
     public NetworkObject LocalPlayerObject { get; private set; }
 
     private readonly Dictionary<ulong, NetworkObject> playerObjects = new Dictionary<ulong, NetworkObject>();
-
-
 
     public override void OnNetworkSpawn()
     {
