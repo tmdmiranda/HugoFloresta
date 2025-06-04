@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+
 public class JumpscareEnemy : NetworkBehaviour
 {
     public float disappearDistance = 30f;
@@ -25,6 +26,10 @@ public class JumpscareEnemy : NetworkBehaviour
                 {
                     Destroy(gameObject);
                 }
+                else
+                {
+                    RequestDespawnServerRpc();
+                }
                 yield break;
             }
             if (Vector3.Distance(transform.position, player.position) > disappearDistance)
@@ -32,6 +37,10 @@ public class JumpscareEnemy : NetworkBehaviour
                 if (IsServer)
                 {
                     Destroy(gameObject);
+                }
+                else
+                {
+                    RequestDespawnServerRpc();
                 }
                 yield break;
             }
@@ -65,5 +74,15 @@ public class JumpscareEnemy : NetworkBehaviour
         if (players.Length == 0) return null;
         int idx = Random.Range(0, players.Length);
         return players[idx].transform;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestDespawnServerRpc()
+    {
+        if (!isDisappearing)
+        {
+            isDisappearing = true;
+            Destroy(gameObject);
+        }
     }
 }
