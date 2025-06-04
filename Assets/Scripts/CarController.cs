@@ -15,15 +15,26 @@ public class CarController : NetworkBehaviour
     private bool remoteDriver;
 
 
-
-
     [Header("Seat Settings")]
     [SerializeField] private Transform[] seats = new Transform[6];
     private NetworkList<ulong> seatOccupants;
     private bool HasDriver;
+
+    [Header("Camera Settings")]
+    [SerializeField] private float rotationSmoothness = 5f;
+    [SerializeField] private float mouseSensitivity = 100f;
+    [SerializeField] private Transform carCamera;
     [SerializeField] private Transform playerCameraY;
     [SerializeField] private Transform playerCameraX;
-
+    [Header("Camera Follow")]
+    [SerializeField] private float turnFollowDeadzone = 0.1f;
+    [SerializeField] private float maxTurnFollowSpeed = 2f;
+    [SerializeField] private float turnFollowDropoffAngle = 90f;
+    [SerializeField] private float cameraSnapThreshold = 5f;
+    [SerializeField] private float cameraMaxRotation = 90f;
+    [SerializeField] private float cameraSmoothingSpeed = 10f;
+    [SerializeField] private float movementInfluenceZone = 15f;
+    [SerializeField] private float movementInfluenceStrength = 0.5f;
 
     private CarInputHandler carInputHandler;
     private Rigidbody rb;
@@ -55,6 +66,38 @@ public class CarController : NetworkBehaviour
     [SerializeField] private Transform steeringWheel;
     [SerializeField] private float steeringWheelMaxRotation = 180f;
 
+    [Header("Camera Settings")]
+    [SerializeField] private float cameraFollowSpeed = 5f;
+    [SerializeField] private float deadzoneAngle = 5f;
+    [SerializeField] private float maxLookAngle = 90f;
+
+    private void HandleVehicleCamera()
+    {
+        if (!playerInsideCar) return;
+
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+
+        float targetXRotation = playerCameraX.localEulerAngles.x - mouseY;
+        targetXRotation = Mathf.Clamp(NormalizeAngle(targetXRotation), -maxLookAngle, maxLookAngle);
+
+        if (Mathf.Abs(targetXRotation) < deadzoneAngle)
+        {
+            targetXRotation = 0f;
+        }
+
+        playerCameraX.localRotation = Quaternion.Slerp(
+            playerCameraX.localRotation,
+            Quaternion.Euler(targetXRotation, 0f, 0f),
+            cameraFollowSpeed * Time.deltaTime
+        );
+    }
+
+    private float NormalizeAngle(float angle)
+    {
+        angle %= 360f;
+        if (angle > 180f) angle -= 360f;
+        return angle;
+    }
 
     private bool AmITheDriver()
     {
@@ -97,48 +140,12 @@ public class CarController : NetworkBehaviour
         else
         {
             rb.isKinematic = true; // Clients don't control physics
-            RequestSeatOccupantsServerRpc();
+
+            // Clients wait for server to populate seatOccupants
+            // No need to initialize here as it will sync automatically
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    private void RequestSeatOccupantsServerRpc(ServerRpcParams rpcParams = default)
-    {
-
-        ulong requestingClientId = rpcParams.Receive.SenderClientId;
-
-        // Convert NetworkList to array
-        ulong[] occupantsArray = new ulong[seatOccupants.Count];
-        for (int i = 0; i < seatOccupants.Count; i++)
-        {
-            occupantsArray[i] = seatOccupants[i];
-        }
-
-        UpdateSeatOccupantsClientRpc(occupantsArray, new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams { TargetClientIds = new[] { requestingClientId } }
-        });
-    }
-
-
-    [ClientRpc]
-    private void UpdateSeatOccupantsClientRpc(ulong[] occupants, ClientRpcParams rpcParams = default)
-    {
-        // Ensure we have enough seats
-        while (seatOccupants.Count < occupants.Length)
-        {
-            seatOccupants.Add(0);
-        }
-
-        // Update local copy of seat occupants
-        for (int i = 0; i < occupants.Length; i++)
-        {
-            if (i < seatOccupants.Count)
-            {
-                seatOccupants[i] = occupants[i];
-            }
-        }
-    }
 
 
     public void EnableVanPhysics()
@@ -227,12 +234,22 @@ public class CarController : NetworkBehaviour
                 ExitCar();
         }
 
-
-        Debug.Log("Ocupados" + seatOccupants[0] + " " + seatOccupants[1] + " " + seatOccupants[2] + " " + seatOccupants[3] + " " + seatOccupants[4] + " " + seatOccupants[5]);
-
         if (playerInsideCar)
         {
             SearchOccupiedSeatsIfLocalPlayerIsSeated();
+        }
+    }
+
+    private void HandleCamera()
+    {
+        if (!playerInsideCar || playerCameraY == null || playerCameraX == null || carCamera == null)
+            return;
+
+        if (playerCameraY.parent != carCamera)
+        {
+
+            playerCameraY.localPosition = Vector3.zero;
+            playerCameraY.localRotation = Quaternion.identity;
         }
     }
 
@@ -243,16 +260,12 @@ public class CarController : NetworkBehaviour
         var playerNetObj = player.GetComponent<NetworkObject>();
         if (playerNetObj == null) return;
 
-        // First request updated seat occupants from server
-        RequestSeatOccupantsServerRpc(new ServerRpcParams());
-
-        // Then proceed with enter logic after receiving update
+        // Try to claim driver seat (0) first
         int preferredSeat = 0;
 
-        // Check if driver seat is available
+        // If driver seat taken, find first available passenger seat
         if (seatOccupants.Count > 0 && seatOccupants[0] != 0)
         {
-            // Find first available passenger seat
             for (int i = 1; i < seats.Length; i++)
             {
                 if (seatOccupants[i] == 0)
@@ -263,13 +276,6 @@ public class CarController : NetworkBehaviour
             }
         }
 
-        // Only proceed if we found an available seat
-        if (preferredSeat == 0 && seatOccupants[0] != 0)
-        {
-            Debug.Log("No available seats found");
-            return;
-        }
-
         RequestEnterCarServerRpc(playerNetObj.OwnerClientId, preferredSeat);
     }
 
@@ -277,37 +283,29 @@ public class CarController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RequestEnterCarServerRpc(ulong clientId, int requestedSeat)
     {
-        if (!IsServer) return;
-        // Double-check seat availability on server
+        // Validate seat
         if (requestedSeat < 0 || requestedSeat >= seats.Length) return;
-        if (seatOccupants[requestedSeat] != 0)
+        if (seatOccupants[requestedSeat] != 0) return;
+
+        // DRIVER SEAT (0) - Only allow if empty
+        if (requestedSeat == 0)
         {
-            // If requested seat is taken, find first available seat
-            for (int i = 0; i < seats.Length; i++)
+            seatOccupants[0] = clientId;
+            HasDriver = true;
+        }
+        // PASSENGER SEATS (1+)
+        else
+        {
+            // Find first available passenger seat if requested is taken
+            for (int i = 1; i < seats.Length; i++)
             {
                 if (seatOccupants[i] == 0)
                 {
-                    requestedSeat = i;
+                    seatOccupants[i] = clientId;
                     break;
                 }
             }
-
-            // If still no seat available, return
-            if (seatOccupants[requestedSeat] != 0) return;
         }
-
-        seatOccupants[requestedSeat] = clientId;
-        if (requestedSeat == 0) HasDriver = true;
-
-        // Convert NetworkList to array for broadcasting
-        ulong[] occupantsArray = new ulong[seatOccupants.Count];
-        for (int i = 0; i < seatOccupants.Count; i++)
-        {
-            occupantsArray[i] = seatOccupants[i];
-        }
-
-        // Notify all clients of the seat change
-        UpdateSeatOccupantsClientRpc(occupantsArray);
 
         MovePlayerToSeatClientRpc(clientId, requestedSeat);
     }
@@ -321,7 +319,6 @@ public class CarController : NetworkBehaviour
         {
             if (seatOccupants[i] == player.GetComponent<NetworkObject>().OwnerClientId)
             {
-                // Only update position, not rotation - this preserves camera movement
                 player.transform.position = seats[i].position;
                 break;
             }
@@ -331,8 +328,6 @@ public class CarController : NetworkBehaviour
     [ClientRpc]
     private void MovePlayerToSeatClientRpc(ulong clientId, int seatIndex)
     {
-        if (NetworkManager.Singleton.LocalClientId != clientId) return;
-
         // Find player object
         NetworkObject playerNetObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
         if (playerNetObj == null) return;
@@ -357,13 +352,10 @@ public class CarController : NetworkBehaviour
             playerInsideCar = true;
             HasDriver = (seatIndex == 0);
 
-            var cam = player.GetComponentInChildren<Camera>();
-            if (cam != null)
-            {
-                playerCameraY = player.transform;
-                playerCameraX = cam.transform;
-
-            }
+            // Setup camera
+            playerCameraY = player.transform;
+            if (playerCameraY != null && playerCameraY.childCount > 0)
+                playerCameraX = playerCameraY.GetChild(0);
         }
     }
 
