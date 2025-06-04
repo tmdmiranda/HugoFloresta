@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Linq;
 
 public class CarController : NetworkBehaviour
 {
@@ -11,13 +12,18 @@ public class CarController : NetworkBehaviour
     public bool playerInsideCar = false;
     public GameObject player;
 
-    [Header("Camera Settings")]
 
+    [Header("Seat Settings")]
+    [SerializeField] private Transform[] seats = new Transform[6];
+    private NetworkList<ulong> seatOccupants;
+    private bool HasDriver;
+
+    [Header("Camera Settings")]
     [SerializeField] private float rotationSmoothness = 5f;
     [SerializeField] private float mouseSensitivity = 100f;
-    [SerializeField] private Transform carCamera; // Assign van's camera root
-    [SerializeField] private Transform playerCameraY; // Camera yaw (horizontal)
-    [SerializeField] private Transform playerCameraX; // Camera pitch (vertical)
+    [SerializeField] private Transform carCamera;
+    [SerializeField] private Transform playerCameraY;
+    [SerializeField] private Transform playerCameraX;
     [Header("Camera Follow")]
     [SerializeField] private float turnFollowDeadzone = 0.1f;
     [SerializeField] private float maxTurnFollowSpeed = 2f;
@@ -34,7 +40,6 @@ public class CarController : NetworkBehaviour
     [Header("Drive Settings")]
     [SerializeField] private Transform driverSeat;
     [SerializeField] private Transform exitPoint;
-
 
     [Header("Car Settings")]
     [SerializeField] private float motorForce;
@@ -57,12 +62,6 @@ public class CarController : NetworkBehaviour
     [SerializeField] private Transform steeringWheel;
     [SerializeField] private float steeringWheelMaxRotation = 180f;
 
-    // Network synchronization variables
-    private NetworkVariable<Vector3> networkPosition = new NetworkVariable<Vector3>();
-    private NetworkVariable<Quaternion> networkRotation = new NetworkVariable<Quaternion>();
-    private NetworkVariable<Vector3> networkVelocity = new NetworkVariable<Vector3>();
-    private NetworkVariable<Vector3> networkAngularVelocity = new NetworkVariable<Vector3>();
-
     [Header("Camera Settings")]
     [SerializeField] private float cameraFollowSpeed = 5f;
     [SerializeField] private float deadzoneAngle = 5f;
@@ -72,20 +71,16 @@ public class CarController : NetworkBehaviour
     {
         if (!playerInsideCar) return;
 
-        // Get mouse input
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-        // Calculate target vertical rotation
         float targetXRotation = playerCameraX.localEulerAngles.x - mouseY;
         targetXRotation = Mathf.Clamp(NormalizeAngle(targetXRotation), -maxLookAngle, maxLookAngle);
 
-        // Apply deadzone near center
         if (Mathf.Abs(targetXRotation) < deadzoneAngle)
         {
             targetXRotation = 0f;
         }
 
-        // Smoothly apply rotation
         playerCameraX.localRotation = Quaternion.Slerp(
             playerCameraX.localRotation,
             Quaternion.Euler(targetXRotation, 0f, 0f),
@@ -99,123 +94,119 @@ public class CarController : NetworkBehaviour
         if (angle > 180f) angle -= 360f;
         return angle;
     }
+
     private void Awake()
     {
         carInputHandler = GetComponent<CarInputHandler>();
         rb = GetComponent<Rigidbody>();
+        rb.isKinematic = true; // Start as kinematic until ownership is set
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
+
+        seatOccupants = new NetworkList<ulong>();
     }
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
-        if (IsClient && !IsHost)
+        // Server retains ownership permanently
+        if (IsServer)
         {
-            rb.isKinematic = true; // Disable physics on clients
+            rb.isKinematic = false;
+
+            // Initialize seat occupants on server
+            seatOccupants.Clear();
+            for (int i = 0; i < seats.Length; i++)
+            {
+                seatOccupants.Add(0); // 0 means empty seat
+            }
         }
         else
         {
-            rb.isKinematic = true;
-            Invoke(nameof(EnableVanPhysics), 0.1f);
+            rb.isKinematic = true; // Clients don't control physics
 
-
-
+            // Clients wait for server to populate seatOccupants
+            // No need to initialize here as it will sync automatically
         }
     }
+
+
 
     public void EnableVanPhysics()
     {
         rb.isKinematic = false;
     }
-
     private void FixedUpdate()
     {
-        if (IsHost)
-        {
-            HandleHostPhysics();
-        }
-        else
-        {
-            HandleClientVisuals();
-        }
-    }
+        if (!IsSpawned) return;
 
-    private void HandleHostPhysics()
-    {
         GetInput();
-        HandleMotor();
-        HandleSteering();
 
-        // Update network variables with current state
-        networkPosition.Value = rb.position;
-        networkRotation.Value = rb.rotation;
-        networkVelocity.Value = rb.linearVelocity;
-        networkAngularVelocity.Value = rb.angularVelocity;
-
-        UpdateWheels();
-        UpdateSteeringWheel();
-    }
-
-    private void HandleClientVisuals()
-    {
-        // Smoothly interpolate to host's state
-        rb.position = Vector3.Lerp(rb.position, networkPosition.Value, Time.fixedDeltaTime * 10f);
-        rb.rotation = Quaternion.Lerp(rb.rotation, networkRotation.Value, Time.fixedDeltaTime * 10f);
-        rb.linearVelocity = networkVelocity.Value;
-        rb.angularVelocity = networkAngularVelocity.Value;
+        // Only the owner handles physics
+        if (IsOwner)
+        {
+            HandleMotor();
+            HandleSteering();
+        }
 
         UpdateWheels();
         UpdateSteeringWheel();
     }
+
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsOwner) return; // Only run on local player's car
+        var netObj = other.GetComponent<NetworkObject>();
+        Debug.Log($"OnTriggerEnter: {other.name}, IsLocalPlayer: {netObj?.IsLocalPlayer}");
+
+        if (netObj.IsLocalPlayer == false) return;
+
 
         if (other.CompareTag("Player"))
         {
-            if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
-            {
-                isColiding = true;
-                player = other.gameObject;
 
-                // Assign Y to player's transform, X to camera's transform
-                var cam = player.GetComponentInChildren<Camera>();
-                if (cam != null)
-                {
-                    playerCameraY = player.transform;   // Y-axis: whole player transform
-                    playerCameraX = cam.transform;      // X-axis: camera's transform
-                }
-                else
-                {
-                    Debug.LogWarning("Camera not found on player entering car trigger.");
-                }
+            isColiding = true;
+            player = other.gameObject;
+
+            var cam = player.GetComponentInChildren<Camera>();
+            if (cam != null)
+            {
+                playerCameraY = player.transform;
+                playerCameraX = cam.transform;
             }
+            else
+            {
+                Debug.LogWarning("Camera not found on player entering car trigger.");
+            }
+
         }
     }
 
 
     private void OnTriggerExit(Collider other)
     {
-        if (!IsOwner) return;
 
+        var netObj = other.GetComponent<NetworkObject>();
+        Debug.Log($"OnTriggerEnter: {other.name}, IsLocalPlayer: {netObj?.IsLocalPlayer}");
+
+        if (netObj == null || !netObj.IsLocalPlayer) return;
         if (other.CompareTag("Player"))
         {
-            if (other.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsOwner)
-            {
-                isColiding = false;
-            }
+
+            isColiding = false;
+
         }
     }
 
-
     private void Update()
     {
-        if (!IsOwner) return;
+        var netObj = player?.GetComponent<NetworkObject>();
+        if (netObj == null || !netObj.IsLocalPlayer) return;
 
         if (Input.GetKeyDown(KeyCode.E))
         {
+            Debug.Log($"E pressed, isColiding: {isColiding}, playerInsideCar: {playerInsideCar}");
             if (isColiding == true && !playerInsideCar)
                 EnterCar();
             else if (playerInsideCar)
@@ -224,46 +215,188 @@ public class CarController : NetworkBehaviour
 
         if (playerInsideCar)
         {
-
+            Debug.Log($"Player inside car, player: {player.name}, cameraY: {playerCameraY?.name}, cameraX: {playerCameraX?.name}");
             HandleCamera();
-            player.transform.position = driverSeat.position;
+            SearchOccupiedSeatsIfLocalPlayerIsSeated();
         }
     }
-
 
     private void HandleCamera()
     {
         if (!playerInsideCar || playerCameraY == null || playerCameraX == null || carCamera == null)
             return;
 
-        // Parent camera to van if not already
         if (playerCameraY.parent != carCamera)
         {
-            playerCameraY.SetParent(carCamera, false);
+
             playerCameraY.localPosition = Vector3.zero;
             playerCameraY.localRotation = Quaternion.identity;
         }
     }
+
     private void EnterCar()
     {
-        player.GetComponent<CharacterController>().enabled = false;
-        player.GetComponent<FirstPersonController>().playerCanMove = false;
+        if (!isColiding || player == null) return;
 
-        // Instantly move and rotate the player
-        player.transform.position = driverSeat.position;
-        player.transform.rotation = driverSeat.rotation;
+        var playerNetObj = player.GetComponent<NetworkObject>();
+        if (playerNetObj == null) return;
 
-        playerInsideCar = true;
+        // Wait until seatOccupants is properly initialized
+        if (seatOccupants.Count != seats.Length)
+        {
+            Debug.LogWarning("Seat occupants not initialized yet");
+            return;
+        }
+
+        // Find first available seat locally
+        int seatIndex = -1;
+        for (int i = 0; i < seats.Length; i++)
+        {
+            if (seatOccupants[i] == 0)
+            {
+                seatIndex = i;
+                break;
+            }
+        }
+
+        if (seatIndex == -1)
+        {
+            Debug.Log("No available seats");
+            return;
+        }
+
+        Debug.Log($"Attempting to enter car at seat {seatIndex}");
+        RequestEnterCarServerRpc(playerNetObj.OwnerClientId, seatIndex);
     }
 
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestEnterCarServerRpc(ulong clientId, int requestedSeat)
+    {
+        // Validate seat index
+        if (requestedSeat < 0 || requestedSeat >= seatOccupants.Count) return;
+
+        // Validate seat availability
+        if (seatOccupants[requestedSeat] != 0) return;
+
+        Debug.Log($"Assigning seat {requestedSeat} to client {clientId}");
+
+        // Occupy seat (no ownership transfer needed)
+        seatOccupants[requestedSeat] = clientId;
+
+        // If this is the driver seat, set HasDriver
+        if (requestedSeat == 0)
+        {
+            HasDriver = true;
+        }
+
+        MovePlayerToSeatClientRpc(clientId, requestedSeat);
+    }
+
+    private void SearchOccupiedSeatsIfLocalPlayerIsSeated()
+    {
+        if (player == null || !player.GetComponent<NetworkObject>().IsLocalPlayer) return;
+
+        // Find which seat the local player is occupying
+        for (int i = 0; i < seatOccupants.Count; i++)
+        {
+            if (seatOccupants[i] == player.GetComponent<NetworkObject>().OwnerClientId)
+            {
+                player.transform.SetPositionAndRotation(
+                    seats[i].position,
+                    seats[i].rotation
+                );
+                break;
+            }
+        }
+    }
+
+    [ClientRpc]
+    private void MovePlayerToSeatClientRpc(ulong clientId, int seatIndex)
+    {
+        // Find player object
+        NetworkObject playerNetObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
+        if (playerNetObj == null) return;
+
+        // Position player
+        playerNetObj.transform.SetPositionAndRotation(
+            seats[seatIndex].position,
+            seats[seatIndex].rotation
+        );
+
+        // Disable components for all clients
+        if (playerNetObj.TryGetComponent<CharacterController>(out var controller))
+            controller.enabled = false;
+
+        if (playerNetObj.TryGetComponent<FirstPersonController>(out var fps))
+            fps.enabled = false; // Disable completely instead of just playerCanMove
+
+        // Configure local player specifics
+        if (playerNetObj.IsLocalPlayer)
+        {
+            player = playerNetObj.gameObject;
+            playerInsideCar = true;
+            HasDriver = (seatIndex == 0);
+
+            // Setup camera
+            playerCameraY = player.transform;
+            if (playerCameraY != null && playerCameraY.childCount > 0)
+                playerCameraX = playerCameraY.GetChild(0);
+        }
+    }
+
+
+    private void SendInputsToServer()
+    {
+        if (!IsOwner || !playerInsideCar) return;
+
+        // Send inputs to server
+        GetInput();
+        HandleMotor();
+        HandleSteering();
+        UpdateWheels();
+        UpdateSteeringWheel();
+    }
     private void GetInput()
     {
-        if (playerInsideCar)
+        if (playerInsideCar && HasDriver)
         {
             horizontalInput = carInputHandler.SteerInput;
             verticalInput = carInputHandler.AccelerateInput;
             isBreaking = carInputHandler.BrakeInput;
+
+            // Non-owners send inputs to the server
+            if (!IsOwner)
+            {
+                SendInputsToServerRpc(horizontalInput, verticalInput, isBreaking);
+            }
         }
+        else
+        {
+            horizontalInput = 0;
+            verticalInput = 0;
+            isBreaking = false;
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SendInputsToServerRpc(float steer, float accelerate, bool brake)
+    {
+        // Only the server (owner) applies these inputs
+        horizontalInput = steer;
+        verticalInput = accelerate;
+        isBreaking = brake;
+    }
+
+    [ClientRpc]
+    private void ReceiveInputsClientRpc(float steer, float accelerate, bool brake, ClientRpcParams rpcParams = default)
+    {
+        // Only the owner processes these inputs
+        if (!IsOwner) return;
+
+        horizontalInput = steer;
+        verticalInput = accelerate;
+        isBreaking = brake;
     }
 
     private void HandleMotor()
@@ -314,61 +447,125 @@ public class CarController : NetworkBehaviour
         }
     }
 
-    private void ExitCar()
-    {
-        if (!IsOwner) return;
-
-        // Calculate safe exit position
-        Vector3 exitPosition = exitPoint.position;
-        if (Physics.Raycast(exitPoint.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 2f))
-        {
-            exitPosition.y = hit.point.y + 0.2f;
-        }
-
-        ExitCarServerRpc(exitPosition);
-        isColiding = false;
-    }
 
     [ServerRpc]
-    private void ExitCarServerRpc(Vector3 exitPosition)
+    private void ExitCarServerRpc(ulong playerId, int seatIndex, Vector3 exitPosition)
     {
-        ExitCarClientRpc(exitPosition);
+        ExitCarClientRpc(playerId, exitPosition);
     }
 
     [ClientRpc]
-
-    private void ExitCarClientRpc(Vector3 exitPosition)
+    private void ExitCarClientRpc(ulong clientId, Vector3 exitPosition)
     {
-        // Unparent the camera first
-        if (playerCameraY != null && playerCameraY.parent == carCamera)
+
+        // Find which seat this player was in
+        int seatIndex = -1;
+        for (int i = 0; i < seatOccupants.Count; i++)
         {
-            playerCameraY.SetParent(null);
+            if (seatOccupants[i] == clientId)
+            {
+                seatIndex = i;
+                break;
+            }
         }
 
-        player.transform.position = exitPosition;
-
-        // Reset camera rotations
-        if (playerCameraX != null)
+        if (seatIndex != -1)
         {
-            playerCameraX.localRotation = Quaternion.identity;
+            // Only the server can actually modify the NetworkList
+            if (IsServer)
+            {
+                seatOccupants[seatIndex] = 0;
+
+                // If this was the driver, clear HasDriver
+                if (seatIndex == 0)
+                {
+                    HasDriver = false;
+                }
+            }
         }
-        if (playerCameraY != null)
+        NetworkObject playerNetObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
+        if (playerNetObj == null) return;
+
+        // Re-enable components for all clients
+        if (playerNetObj.TryGetComponent<CharacterController>(out var controller))
+            controller.enabled = true;
+
+        if (playerNetObj.TryGetComponent<FirstPersonController>(out var fps))
+            fps.enabled = true;
+
+        // Only handle local player specific logic
+        if (playerNetObj.IsLocalPlayer)
         {
-            playerCameraY.localRotation = Quaternion.identity;
+            // Reset position
+            playerNetObj.transform.position = exitPosition;
+
+            // Reset car state
+            playerInsideCar = false;
+            HasDriver = false;
+            player = null;
+            playerCameraX = null;
+            playerCameraY = null;
+
+            // Reset input
+            horizontalInput = 0;
+            verticalInput = 0;
+            isBreaking = false;
         }
+    }
 
-        var controller = player.GetComponent<CharacterController>();
-        if (controller != null) controller.enabled = true;
-
-        var fpsController = player.GetComponent<FirstPersonController>();
-        if (fpsController != null)
+    [ServerRpc]
+    private void ExitCarServerRpc(ulong exitingPlayerId, Vector3 exitPosition)
+    {
+        // Find which seat the player is in
+        int seatIndex = -1;
+        for (int i = 0; i < seatOccupants.Count; i++)
         {
-            fpsController.playerCanMove = true;
+            if (seatOccupants[i] == exitingPlayerId)
+            {
+                seatIndex = i;
+                break;
+            }
         }
 
-        playerInsideCar = false;
-        player = null;
-        playerCameraX = null;
-        playerCameraY = null;
+        if (seatIndex == -1) return;
+
+        // Free the seat
+        seatOccupants[seatIndex] = 0;
+        ExitCarClientRpc(exitingPlayerId, exitPosition);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestExitCarServerRpc(ulong clientId, int seatIndex, Vector3 exitPos)
+    {
+        if (seatOccupants[seatIndex] != clientId) return;
+
+        // Free seat
+        seatOccupants[seatIndex] = 0;
+
+        ExitCarClientRpc(clientId, exitPos);
+    }
+
+
+
+    private void ExitCar()
+    {
+        if (player == null) return;
+
+        var playerNetObj = player.GetComponent<NetworkObject>();
+        if (!playerNetObj.IsLocalPlayer) return;
+
+        // Find occupied seat
+        int seatIndex = -1;
+        for (int i = 0; i < seatOccupants.Count; i++)
+        {
+            if (seatOccupants[i] == playerNetObj.OwnerClientId)
+            {
+                seatIndex = i;
+                break;
+            }
+        }
+        if (seatIndex == -1) return;
+
+        RequestExitCarServerRpc(playerNetObj.OwnerClientId, seatIndex, exitPoint.position);
     }
 }

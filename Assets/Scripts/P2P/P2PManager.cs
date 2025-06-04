@@ -243,7 +243,7 @@ public class P2P_Manager : NetworkBehaviour
                 continue;
             }
 
-            netObj.SpawnWithOwnership(clientId);
+            netObj.SpawnAsPlayerObject(clientId);
 
 
             // Set player name
