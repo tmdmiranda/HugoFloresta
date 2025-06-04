@@ -2,6 +2,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Linq;
+using System.Collections;
 
 public class CarController : NetworkBehaviour
 {
@@ -14,6 +15,7 @@ public class CarController : NetworkBehaviour
 
     private bool remoteDriver;
 
+    private bool isTransiting = false;
 
     [Header("Seat Settings")]
     [SerializeField] private Transform[] seats = new Transform[6];
@@ -192,6 +194,7 @@ public class CarController : NetworkBehaviour
         if (playerInsideCar)
         {
             SearchOccupiedSeatsIfLocalPlayerIsSeated();
+            LockPlayerCameraToCar();
         }
     }
 
@@ -221,6 +224,23 @@ public class CarController : NetworkBehaviour
 
         Debug.Log("Preferred seat: " + preferredSeat);
         RequestEnterCarServerRpc(playerNetObj.OwnerClientId, preferredSeat);
+    }
+
+    private void LockPlayerCameraToCar()
+    {
+        if (carCamera == null || playerCameraY == null) return;
+
+        Vector3 carEulerAngles = carCamera.rotation.eulerAngles;
+        Vector3 cameraEulerAngles = playerCameraY.localEulerAngles;
+
+        if (cameraEulerAngles.y > 180f) cameraEulerAngles.y -= 360f;
+        if (carEulerAngles.y > 180f) carEulerAngles.y -= 360f;
+
+        float cameraYRelativeToCar = Mathf.DeltaAngle(carEulerAngles.y, cameraEulerAngles.y);
+        cameraYRelativeToCar = Mathf.Clamp(cameraYRelativeToCar, -90f, 90f);
+
+        float lockedY = carEulerAngles.y + cameraYRelativeToCar;
+        playerCameraY.rotation = Quaternion.Euler(carEulerAngles.x, lockedY, carEulerAngles.z);
     }
 
 
@@ -431,6 +451,7 @@ public class CarController : NetworkBehaviour
     [ClientRpc]
     private void ExitCarClientRpc(ulong clientId, Vector3 exitPosition)
     {
+
         // Find the player object
         NetworkObject playerNetObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
         if (playerNetObj == null) return;
@@ -520,6 +541,24 @@ public class CarController : NetworkBehaviour
         var playerNetObj = player.GetComponent<NetworkObject>();
         if (playerNetObj == null || !playerNetObj.IsLocalPlayer) return;
 
+        if (playerCameraX != null)
+            playerCameraX.localRotation = Quaternion.Euler(0f, 0f, 0f);
+        if (playerCameraY != null)
+            playerCameraY.localRotation = Quaternion.Euler(0f, 0f, 0f);
+
+        if (player.TryGetComponent<Collider>(out var playerCol) && TryGetComponent<Collider>(out var carCol))
+        {
+            Physics.IgnoreCollision(playerCol, carCol, true);
+            StartCoroutine(ReenableCollisionAfterDelay(playerCol, carCol, 0.5f));
+        }
+
         RequestExitCarServerRpc(playerNetObj.OwnerClientId, exitPoint.position);
+    }
+
+    private IEnumerator ReenableCollisionAfterDelay(Collider playerCol, Collider carCol, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        Physics.IgnoreCollision(playerCol, carCol, false);
+        isTransiting = false;
     }
 }
