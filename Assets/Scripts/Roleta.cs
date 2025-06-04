@@ -1,10 +1,13 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
-
+using Zenject;
 public class TopDownViewInteract : MonoBehaviour
 {
+
+
     [Header("UI Settings")]
+    [SerializeField] [Inject] RoletaSystem _roletaSystem; // injecao xddCinema
     public TMP_Text interactionText;
     private bool isPlayerNear = false;
     private bool isInTopView = false;
@@ -14,21 +17,24 @@ public class TopDownViewInteract : MonoBehaviour
     public int startCounter = 0;
     public bool inGame = false;
 
+
     private void Start()
     {
-        if (inGame == true)
-        {
-            FindPlayerGameObject();
-        }
+       // if (inGame == true)
+       // {
+       //     FindPlayerGameObject();
+       // }
+
+        _roletaSystem = GameObject.Find("Manager").GetComponent<RoletaSystem>();
     }
 
 
     public void FindPlayerGameObject()
     {
-        if (playerCameraObject == null)
-        {
-            playerCameraObject = GameObject.FindGameObjectWithTag("Player");
-        }
+       // if (playerCameraObject == null)
+       // {
+           // playerCameraObject = GameObject.FindGameObjectWithTag("Player");
+       // }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -38,6 +44,7 @@ public class TopDownViewInteract : MonoBehaviour
             isPlayerNear = true;
             interactionText.text = "Press E to use Roulette";
         }
+
     }
 
     private void OnTriggerExit(Collider other)
@@ -67,8 +74,13 @@ public class TopDownViewInteract : MonoBehaviour
             if (isPlayerNear && Input.GetKeyDown(KeyCode.E))
             {
                 Debug.Log("E pressed");
-                ToggleTopDownView();
+               // ToggleTopDownView();
             }
+        }
+
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            _roletaSystem.SpawnNewRoleta();
         }
     }
 
@@ -76,16 +88,18 @@ public class TopDownViewInteract : MonoBehaviour
     {
         if (!isInTopView)
         {
-            playerCameraObject.SetActive(false);
-            Maincamera.SetActive(true);
+      //      playerCameraObject.SetActive(false);
+      //      Maincamera.SetActive(true);
         }
         else
         {
-            playerCameraObject.SetActive(true);
-            Maincamera.SetActive(false);
+       //     playerCameraObject.SetActive(true);
+     //       Maincamera.SetActive(false);
         }
 
         isInTopView = !isInTopView;
     }
+
+
 
 }
