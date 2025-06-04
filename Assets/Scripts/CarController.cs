@@ -12,6 +12,8 @@ public class CarController : NetworkBehaviour
     public bool playerInsideCar = false;
     public GameObject player;
 
+    private bool remoteDriver;
+
 
     [Header("Seat Settings")]
     [SerializeField] private Transform[] seats = new Transform[6];
@@ -45,6 +47,8 @@ public class CarController : NetworkBehaviour
     [SerializeField] private float motorForce;
     [SerializeField] private float breakForce;
     [SerializeField] private float maxSteerAngle;
+
+
 
     [Header("Wheel Colliders")]
     [SerializeField] private WheelCollider frontLeftWheelCollider;
@@ -95,6 +99,17 @@ public class CarController : NetworkBehaviour
         return angle;
     }
 
+    private bool AmITheDriver()
+    {
+        if (player == null) return false;
+
+        var netObj = player.GetComponent<NetworkObject>();
+        if (netObj == null || !netObj.IsLocalPlayer) return false;
+
+        // Check if the local player is occupying the driver seat
+        return seatOccupants.Count > 0 && seatOccupants[0] == netObj.OwnerClientId;
+
+    }
     private void Awake()
     {
         carInputHandler = GetComponent<CarInputHandler>();
@@ -141,11 +156,17 @@ public class CarController : NetworkBehaviour
     {
         if (!IsSpawned) return;
 
-        GetInput();
+
+        if (AmITheDriver() == true)
+        {
+            GetInput();
+        }
 
         // Only the owner handles physics
         if (IsOwner)
         {
+            Debug.Log($"[CarController] FixedUpdate - IsOwner: {IsOwner}, playerInsideCar: {playerInsideCar}, HasDriver: {HasDriver}");
+
             HandleMotor();
             HandleSteering();
         }
@@ -241,53 +262,51 @@ public class CarController : NetworkBehaviour
         var playerNetObj = player.GetComponent<NetworkObject>();
         if (playerNetObj == null) return;
 
-        // Wait until seatOccupants is properly initialized
-        if (seatOccupants.Count != seats.Length)
-        {
-            Debug.LogWarning("Seat occupants not initialized yet");
-            return;
-        }
+        // Try to claim driver seat (0) first
+        int preferredSeat = 0;
 
-        // Find first available seat locally
-        int seatIndex = -1;
-        for (int i = 0; i < seats.Length; i++)
+        // If driver seat taken, find first available passenger seat
+        if (seatOccupants.Count > 0 && seatOccupants[0] != 0)
         {
-            if (seatOccupants[i] == 0)
+            for (int i = 1; i < seats.Length; i++)
             {
-                seatIndex = i;
-                break;
+                if (seatOccupants[i] == 0)
+                {
+                    preferredSeat = i;
+                    break;
+                }
             }
         }
 
-        if (seatIndex == -1)
-        {
-            Debug.Log("No available seats");
-            return;
-        }
-
-        Debug.Log($"Attempting to enter car at seat {seatIndex}");
-        RequestEnterCarServerRpc(playerNetObj.OwnerClientId, seatIndex);
+        RequestEnterCarServerRpc(playerNetObj.OwnerClientId, preferredSeat);
     }
 
 
     [ServerRpc(RequireOwnership = false)]
     private void RequestEnterCarServerRpc(ulong clientId, int requestedSeat)
     {
-        // Validate seat index
-        if (requestedSeat < 0 || requestedSeat >= seatOccupants.Count) return;
-
-        // Validate seat availability
+        // Validate seat
+        if (requestedSeat < 0 || requestedSeat >= seats.Length) return;
         if (seatOccupants[requestedSeat] != 0) return;
 
-        Debug.Log($"Assigning seat {requestedSeat} to client {clientId}");
-
-        // Occupy seat (no ownership transfer needed)
-        seatOccupants[requestedSeat] = clientId;
-
-        // If this is the driver seat, set HasDriver
+        // DRIVER SEAT (0) - Only allow if empty
         if (requestedSeat == 0)
         {
+            seatOccupants[0] = clientId;
             HasDriver = true;
+        }
+        // PASSENGER SEATS (1+)
+        else
+        {
+            // Find first available passenger seat if requested is taken
+            for (int i = 1; i < seats.Length; i++)
+            {
+                if (seatOccupants[i] == 0)
+                {
+                    seatOccupants[i] = clientId;
+                    break;
+                }
+            }
         }
 
         MovePlayerToSeatClientRpc(clientId, requestedSeat);
@@ -361,14 +380,15 @@ public class CarController : NetworkBehaviour
     {
         if (playerInsideCar && HasDriver)
         {
+            // Get local inputs
             horizontalInput = carInputHandler.SteerInput;
             verticalInput = carInputHandler.AccelerateInput;
             isBreaking = carInputHandler.BrakeInput;
 
-            // Non-owners send inputs to the server
-            if (!IsOwner)
+            // If we're NOT the host (but we're the driver), send inputs to host
+            if (!IsOwner && HasDriver)
             {
-                SendInputsToServerRpc(horizontalInput, verticalInput, isBreaking);
+                SendInputsToOwnerServerRpc(horizontalInput, verticalInput, isBreaking);
             }
         }
         else
@@ -380,27 +400,43 @@ public class CarController : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SendInputsToServerRpc(float steer, float accelerate, bool brake)
+    private void SendInputsToOwnerServerRpc(float steer, float accel, bool brake)
     {
-        // Only the server (owner) applies these inputs
-        horizontalInput = steer;
-        verticalInput = accelerate;
-        isBreaking = brake;
+        Debug.Log($"[CLIENT] Sending van inputs to host: Steer={steer}, Accel={accel}, Brake={brake}");
+
+        // Forward to the vehicle owner (host)
+        ReceiveInputsClientRpc(steer, accel, brake,
+            new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new[] { OwnerClientId }
+                }
+            });
     }
 
     [ClientRpc]
-    private void ReceiveInputsClientRpc(float steer, float accelerate, bool brake, ClientRpcParams rpcParams = default)
+    private void ReceiveInputsClientRpc(float steer, float accel, bool brake, ClientRpcParams rpcParams = default)
     {
-        // Only the owner processes these inputs
-        if (!IsOwner) return;
+        Debug.Log($"[CLIENT] Received van inputs from host: Steer={steer}, Accel={accel}, Brake={brake}");
+        {
+            // Only the host processes these
+            if (!IsOwner) return;
 
-        horizontalInput = steer;
-        verticalInput = accelerate;
-        isBreaking = brake;
+            Debug.Log($"[HOST] Received van inputs: Steer={steer}, Accel={accel}, Brake={brake}");
+
+            horizontalInput = steer;
+            verticalInput = accel;
+            isBreaking = brake;
+        }
     }
+
+
+
 
     private void HandleMotor()
     {
+        Debug.Log($"[CarController] HandleMotor - verticalInput: {verticalInput}, isBreaking: {isBreaking}");
         frontLeftWheelCollider.motorTorque = verticalInput * motorForce;
         frontRightWheelCollider.motorTorque = verticalInput * motorForce;
         currentbreakForce = isBreaking ? breakForce : 0f;
@@ -448,50 +484,28 @@ public class CarController : NetworkBehaviour
     }
 
 
-    [ServerRpc]
-    private void ExitCarServerRpc(ulong playerId, int seatIndex, Vector3 exitPosition)
-    {
-        ExitCarClientRpc(playerId, exitPosition);
-    }
+
 
     [ClientRpc]
     private void ExitCarClientRpc(ulong clientId, Vector3 exitPosition)
     {
 
-        // Find which seat this player was in
-        int seatIndex = -1;
-        for (int i = 0; i < seatOccupants.Count; i++)
+        if (IsServer)
         {
-            if (seatOccupants[i] == clientId)
+            for (int i = 0; i < seatOccupants.Count; i++)
             {
-                seatIndex = i;
-                break;
-            }
-        }
-
-        if (seatIndex != -1)
-        {
-            // Only the server can actually modify the NetworkList
-            if (IsServer)
-            {
-                seatOccupants[seatIndex] = 0;
-
-                // If this was the driver, clear HasDriver
-                if (seatIndex == 0)
+                if (seatOccupants[i] == clientId)
                 {
-                    HasDriver = false;
+                    seatOccupants[i] = 0;
+                    if (i == 0) HasDriver = false;
+                    break;
                 }
             }
         }
         NetworkObject playerNetObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
         if (playerNetObj == null) return;
 
-        // Re-enable components for all clients
-        if (playerNetObj.TryGetComponent<CharacterController>(out var controller))
-            controller.enabled = true;
 
-        if (playerNetObj.TryGetComponent<FirstPersonController>(out var fps))
-            fps.enabled = true;
 
         // Only handle local player specific logic
         if (playerNetObj.IsLocalPlayer)
@@ -511,6 +525,13 @@ public class CarController : NetworkBehaviour
             verticalInput = 0;
             isBreaking = false;
         }
+
+        // Re-enable components for all clients
+        if (playerNetObj.TryGetComponent<CharacterController>(out var controller))
+            controller.enabled = true;
+
+        if (playerNetObj.TryGetComponent<FirstPersonController>(out var fps))
+            fps.enabled = true;
     }
 
     [ServerRpc]
