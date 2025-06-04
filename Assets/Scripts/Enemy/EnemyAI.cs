@@ -26,6 +26,7 @@ public class EnemyAI : NetworkBehaviour
     private Coroutine behaviorCoroutine; // Referência à corrotina principal de comportamento
     private float currentSpeed; // Velocidade atual do inimigo (usada para transições suaves)
     private bool isChasing = false; // Indica se o inimigo está atualmente a perseguir um jogador
+    private GameObject currentTarget; // Referência ao jogador alvo que está a ser perseguido
 
     // Método chamado ao iniciar o objeto
     void Start()
@@ -128,9 +129,13 @@ public class EnemyAI : NetworkBehaviour
             {
                 if (!isChasing)
                 {
-                    isChasing = true;
-                    agent.autoBraking = false;
-                    agent.stoppingDistance = stoppingDistance;
+                    StartChasingPlayer(nearestPlayer);
+                }
+                else if (currentTarget != nearestPlayer)
+                {
+                    // Mudou de alvo
+                    StopChasingCurrentPlayer();
+                    StartChasingPlayer(nearestPlayer);
                 }
                 yield return StartCoroutine(ChasePlayer(nearestPlayer));
             }
@@ -138,9 +143,7 @@ public class EnemyAI : NetworkBehaviour
             {
                 if (isChasing)
                 {
-                    isChasing = false;
-                    agent.autoBraking = true;
-                    agent.stoppingDistance = 0.1f;
+                    StopChasingCurrentPlayer();
                 }
                 yield return StartCoroutine(Wander());
             }
@@ -151,6 +154,67 @@ public class EnemyAI : NetworkBehaviour
         if (agent == null || !agent.isOnNavMesh)
         {
             Debug.LogError("Enemy AI stopped: NavMeshAgent is null or not on NavMesh");
+        }
+    }
+
+    private void StartChasingPlayer(GameObject player)
+    {
+        isChasing = true;
+        currentTarget = player;
+        agent.autoBraking = false;
+        agent.stoppingDistance = stoppingDistance;
+        
+        // Notificar o sistema de sanidade do player
+        SanitySystem sanitySystem = player.GetComponent<SanitySystem>();
+        if (sanitySystem != null)
+        {
+            NotifyPlayerBeingChasedClientRpc(player.GetComponent<NetworkObject>().OwnerClientId);
+        }
+        
+        Debug.Log($"Enemy started chasing player {player.name}");
+    }
+
+    private void StopChasingCurrentPlayer()
+    {
+        if (currentTarget != null)
+        {
+            SanitySystem sanitySystem = currentTarget.GetComponent<SanitySystem>();
+            if (sanitySystem != null)
+            {
+                NotifyPlayerStoppedBeingChasedClientRpc(currentTarget.GetComponent<NetworkObject>().OwnerClientId);
+            }
+            Debug.Log($"Enemy stopped chasing player {currentTarget.name}");
+        }
+        
+        isChasing = false;
+        currentTarget = null;
+        agent.autoBraking = true;
+        agent.stoppingDistance = 0.1f;
+    }
+
+    [ClientRpc]
+    private void NotifyPlayerBeingChasedClientRpc(ulong playerClientId)
+    {
+        if (NetworkManager.Singleton.LocalClientId == playerClientId)
+        {
+            SanitySystem localSanitySystem = FindObjectOfType<SanitySystem>();
+            if (localSanitySystem != null && localSanitySystem.IsOwner)
+            {
+                localSanitySystem.AddChasingEnemy();
+            }
+        }
+    }
+
+    [ClientRpc]
+    private void NotifyPlayerStoppedBeingChasedClientRpc(ulong playerClientId)
+    {
+        if (NetworkManager.Singleton.LocalClientId == playerClientId)
+        {
+            SanitySystem localSanitySystem = FindObjectOfType<SanitySystem>();
+            if (localSanitySystem != null && localSanitySystem.IsOwner)
+            {
+                localSanitySystem.RemoveChasingEnemy();
+            }
         }
     }
 
@@ -316,6 +380,11 @@ public class EnemyAI : NetworkBehaviour
     // Método chamado quando o inimigo é destruído (por exemplo: morre)
     new void OnDestroy()
     {
+        if (isChasing)
+        {
+            StopChasingCurrentPlayer();
+        }
+        
         if (behaviorCoroutine != null)
             StopCoroutine(behaviorCoroutine);
     }
