@@ -26,6 +26,9 @@ public class EnemyAI : NetworkBehaviour
     private Coroutine behaviorCoroutine; // Referência à corrotina principal de comportamento
     private float currentSpeed; // Velocidade atual do inimigo (usada para transições suaves)
     private bool isChasing = false; // Indica se o inimigo está atualmente a perseguir um jogador
+    
+    [Header("animation")]
+    [SerializeField]private Animator animator; // Referência ao componente Animator para animações
 
     // Método chamado ao iniciar o objeto
     void Start()
@@ -51,37 +54,46 @@ public class EnemyAI : NetworkBehaviour
     }
 
     // Método chamado a cada frame do jogo
-    void Update()
-    {
-        // Só o servidor executa a lógica de movimento
-        if (!IsServer) return;
+void Update()
+{
+    // Só o servidor executa a lógica de movimento
+    if (!IsServer) return;
 
-        // Procura o jogador mais próximo
-        GameObject nearestPlayer = FindClosestPlayer();
-        if (nearestPlayer != null)
+    // Procura o jogador mais próximo
+    GameObject nearestPlayer = FindClosestPlayer();
+    if (nearestPlayer != null)
+    {
+        float dist = Vector3.Distance(transform.position, nearestPlayer.transform.position);
+        // Se estiver longe o suficiente, persegue o jogador
+        if (dist > stoppingDistance)
         {
-            float dist = Vector3.Distance(transform.position, nearestPlayer.transform.position);
-            // Se estiver longe o suficiente, persegue o jogador
-            if (dist > stoppingDistance)
+            if (agent != null && agent.isOnNavMesh)
             {
-                if (agent != null && agent.isOnNavMesh)
-                {
-                    agent.SetDestination(nearestPlayer.transform.position);
-                    agent.speed = speed + 200f;
-                }
-            }
-            // Se estiver suficientemente perto, para o movimento
-            else
-            {
-                if (agent != null && agent.isOnNavMesh)
-                {
-                    agent.ResetPath();
-                }
+                agent.SetDestination(nearestPlayer.transform.position);
+                agent.speed = speed + 200f;
             }
         }
-        // Se não encontrar nenhum jogador, patrulha/anda aleatoriamente
-        else Wander();
+        // Se estiver suficientemente perto, para o movimento
+        else
+        {
+            if (agent != null && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+            }
+        }
     }
+    else
+    {
+        Wander();
+    }
+
+    // Animation logic: set bools for walking/idle
+    float animSpeed = (agent != null && agent.isOnNavMesh) ? agent.velocity.magnitude : 0f;
+    bool isWalking = animSpeed > 0.1f;
+    bool isIdle = !isWalking;
+    animator.SetBool("isWalking", isWalking);
+    animator.SetBool("isIdle", isIdle);
+}
 
     // Configura os parâmetros do NavMeshAgent conforme as definições públicas
     void ConfigureAgent()
