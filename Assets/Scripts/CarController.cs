@@ -20,12 +20,15 @@ public class CarController : NetworkBehaviour
     [Header("Seat Settings")]
     [SerializeField] private Transform[] seats = new Transform[6];
     public NetworkList<ulong> seatOccupants = new NetworkList<ulong>();
-    private bool HasDriver;
-
-    [Header("Camera Settings")]
+    private bool HasDriver;    [Header("Camera Settings")]
     [SerializeField] private Transform carCamera;
     [SerializeField] private Transform playerCameraY;
     [SerializeField] private Transform playerCameraX;
+    
+    // Original camera position storage
+    private Vector3 originalCameraPosition;
+    private bool hasStoredOriginalPosition = false;
+    
     private CarInputHandler carInputHandler;
     private Rigidbody rb;
 
@@ -308,9 +311,7 @@ public class CarController : NetworkBehaviour
             controller.enabled = false;
 
         if (playerNetObj.TryGetComponent<FirstPersonController>(out var fps))
-            fps.playerCanMove = false; // Disable completely instead of just playerCanMove
-
-        // Configure local player specifics
+            fps.playerCanMove = false; // Disable completely instead of just playerCanMove        // Configure local player specifics
         if (playerNetObj.IsLocalPlayer)
         {
             player = playerNetObj.gameObject;
@@ -319,6 +320,9 @@ public class CarController : NetworkBehaviour
             playerCameraY = player.transform;
             if (playerCameraY != null && playerCameraY.childCount > 0)
                 playerCameraX = playerCameraY.GetChild(0);
+            
+            // Store original camera position and apply car camera position
+            ApplyCarCameraPosition();
         }
     }
 
@@ -452,11 +456,12 @@ public class CarController : NetworkBehaviour
 
         // Find the player object
         NetworkObject playerNetObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
-        if (playerNetObj == null) return;
-
-        // Handle local player specific logic
+        if (playerNetObj == null) return;        // Handle local player specific logic
         if (playerNetObj.IsLocalPlayer)
         {
+            // Restore original camera position before resetting
+            RestoreOriginalCameraPosition();
+            
             // Reset position
             playerNetObj.transform.position = exitPosition;
 
@@ -470,6 +475,9 @@ public class CarController : NetworkBehaviour
             horizontalInput = 0;
             verticalInput = 0;
             isBreaking = false;
+            
+            // Reset camera position tracking
+            hasStoredOriginalPosition = false;
         }
 
         // Re-enable components for all clients
@@ -558,5 +566,28 @@ public class CarController : NetworkBehaviour
         yield return new WaitForSeconds(delay);
         Physics.IgnoreCollision(playerCol, carCol, false);
         isTransiting = false;
+    }    private void ApplyCarCameraPosition()
+    {
+        if (playerCameraX == null) return;
+        
+        // Store original camera position if not already stored
+        if (!hasStoredOriginalPosition)
+        {
+            originalCameraPosition = playerCameraX.localPosition;
+            hasStoredOriginalPosition = true;
+        }
+        
+        // Apply car camera position (70% of original Y position for a more comfortable sitting height)
+        Vector3 carCameraPosition = originalCameraPosition;
+        carCameraPosition.y = originalCameraPosition.y * 0.65f;
+        playerCameraX.localPosition = carCameraPosition;
+    }
+    
+    private void RestoreOriginalCameraPosition()
+    {
+        if (playerCameraX == null || !hasStoredOriginalPosition) return;
+        
+        // Restore original camera position
+        playerCameraX.localPosition = originalCameraPosition;
     }
 }
