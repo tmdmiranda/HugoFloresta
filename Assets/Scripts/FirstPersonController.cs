@@ -189,17 +189,27 @@ public class FirstPersonController : NetworkBehaviour
         animator.SetBool("IsCrouching", isCrouchingNetwork.Value);
         animator.SetBool("IsGrounded", characterController.isGrounded);
 
-        if (IsServer)
+        NetworkedAnimationState state = new NetworkedAnimationState
         {
-            NetworkedAnimationState state = new NetworkedAnimationState
-            {
-                Speed = currentAnimationSpeed,
-                Horizontal = currentAnimationBlend.x,
-                Vertical = currentAnimationBlend.y,
-                IsGrounded = characterController.isGrounded
-            };
-            networkedAnimationState.Value = state;
+            Speed = currentAnimationSpeed,
+            Horizontal = currentAnimationBlend.x,
+            Vertical = currentAnimationBlend.y,
+            IsGrounded = characterController.isGrounded
+        };
+
+        if (state.Speed != networkedAnimationState.Value.Speed ||
+            state.Horizontal != networkedAnimationState.Value.Horizontal ||
+            state.Vertical != networkedAnimationState.Value.Vertical ||
+            state.IsGrounded != networkedAnimationState.Value.IsGrounded)
+        {
+            UpdateAnimationStateClientRpc(state);
         }
+    }
+
+    [ClientRpc]
+    private void UpdateAnimationStateClientRpc(NetworkedAnimationState state)
+    {
+        networkedAnimationState.Value = state;
     }
 
     private void ApplyHorizontalRotation(float rotationAmount)
