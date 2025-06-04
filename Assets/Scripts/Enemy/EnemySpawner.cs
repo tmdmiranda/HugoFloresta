@@ -75,7 +75,6 @@ public class EnemySpawner : NetworkBehaviour
                 Debug.LogWarning($"FAILED to spawn enemy {i} at position {spawnPos}");
             }
         }
-
         Debug.Log($"Spawn summary: {successfullySpawned}/{numberOfEnemies} enemies spawned");
     }
 
