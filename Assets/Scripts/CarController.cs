@@ -14,6 +14,7 @@ public class CarController : NetworkBehaviour
 
     private bool remoteDriver;
 
+    private bool isTransiting = false;
 
     [Header("Seat Settings")]
     [SerializeField] private Transform[] seats = new Transform[6];
@@ -449,6 +450,7 @@ public class CarController : NetworkBehaviour
     [ClientRpc]
     private void ExitCarClientRpc(ulong clientId, Vector3 exitPosition)
     {
+
         // Find the player object
         NetworkObject playerNetObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
         if (playerNetObj == null) return;
@@ -538,6 +540,25 @@ public class CarController : NetworkBehaviour
         var playerNetObj = player.GetComponent<NetworkObject>();
         if (playerNetObj == null || !playerNetObj.IsLocalPlayer) return;
 
+        if (playerCameraX != null)
+            playerCameraX.localRotation = Quaternion.Euler(0f, 0f, 0f);
+        if (playerCameraY != null)
+            playerCameraY.localRotation = Quaternion.Euler(0f, 0f, 0f);
+
+        if (player.TryGetComponent<Collider>(out var playerCol) &&
+        TryGetComponent<Collider>(out var carCol))
+        {
+            Physics.IgnoreCollision(playerCol, carCol, true);
+            StartCoroutine(ReenableCollisionAfterDelay(playerCol, carCol, 0.5f));
+        }
+
         RequestExitCarServerRpc(playerNetObj.OwnerClientId, exitPoint.position);
+    }
+
+    private System.Collections.IEnumerator ReenableCollisionAfterDelay(Collider playerCol, Collider carCol, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        Physics.IgnoreCollision(playerCol, carCol, false);
+        isTransiting = false;
     }
 }
