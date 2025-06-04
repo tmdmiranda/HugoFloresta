@@ -20,6 +20,7 @@ public class EnemySpawner : NetworkBehaviour
     // Método chamado quando o objeto é inicializado na rede
     public void OnNetworkSpawn()
     {
+        Debug.Log("EnemySpawner initialized on network spawn.");
         // Apenas o servidor pode spawnar inimigos
         if (!IsServer) return;
 
