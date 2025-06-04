@@ -19,7 +19,7 @@ public class JumpscareEnemy : NetworkBehaviour
     {
         while (!isDisappearing && player != null)
         {
-            if (IsSeenByPlayer())
+            /*if (IsSeenByPlayer())
             {
                 isDisappearing = true;
                 if (IsServer)
@@ -43,7 +43,7 @@ public class JumpscareEnemy : NetworkBehaviour
                     RequestDespawnServerRpc();
                 }
                 yield break;
-            }
+            }*/
             yield return new WaitForSeconds(checkInterval);
         }
     }

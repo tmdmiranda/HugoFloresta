@@ -3,7 +3,12 @@ guid: c6605d84cc0ec224793a62daecdd3d6a
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: roletaN-removebg-preview
+    second: {fileID: 2800000, guid: f7665ef955214c54ebff3d8b2dfbbed1, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
