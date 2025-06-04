@@ -189,8 +189,6 @@ public class CarController : NetworkBehaviour
                 ExitCar();
         }
 
-        Debug.Log("Seats" + seatOccupants[0] + " " + seatOccupants[1] + " " + seatOccupants[2] + " " + seatOccupants[3] + " " + seatOccupants[4] + " " + seatOccupants[5]);
-
         if (playerInsideCar)
         {
             SearchOccupiedSeatsIfLocalPlayerIsSeated();
