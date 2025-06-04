@@ -24,6 +24,8 @@ using System.Net.NetworkInformation;
 public class P2P_Manager : NetworkBehaviour
 {
     [Header("UI Elements")]
+
+    public GameObject Roleta;
     public TMP_InputField nameInputField;
     public TMP_InputField ipInputField;
     public TMP_Text hostIp;
@@ -261,6 +263,7 @@ public class P2P_Manager : NetworkBehaviour
 
         Debug.Log("Finished spawning all players");
         SpawnVan();
+        SpawnRoleta();
         enemySpawner.OnNetworkSpawn();
     }
 
@@ -305,9 +308,33 @@ public class P2P_Manager : NetworkBehaviour
         Debug.Log("Van spawned successfully");
     }
 
+        public void SpawnRoleta()
+    {
+        if (!IsServer) return;
 
+        if (vanPrefab == null)
+        {
+            Debug.LogError("Van prefab not found in Resources!");
+            return;
+        }
 
+        Vector3 spawnPoint = new Vector3(900f, 100f, 423f); // start high
+        if (Physics.Raycast(spawnPoint, Vector3.down, out RaycastHit hit, 200f))
+        {
+            spawnPoint = hit.point + Vector3.up * 0.1f; // just above ground
+        }
+        GameObject roleta = Instantiate(Roleta, spawnPoint, Quaternion.identity);
+        NetworkObject roletaNetObj = roleta.GetComponent<NetworkObject>();
 
+        if (roletaNetObj == null)
+        {
+            Debug.LogError("Van prefab is missing NetworkObject component!");
+            return;
+        }
+
+        roletaNetObj.Spawn();
+        Debug.Log("Van spawned successfully");
+    }
 
 
     public override void OnNetworkDespawn()

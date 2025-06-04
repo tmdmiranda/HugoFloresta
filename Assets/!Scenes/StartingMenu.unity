@@ -1532,6 +1532,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  Roleta: {fileID: 2088531331927311078, guid: 0083f7ad223ecd244885ed14f157661f, type: 3}
   nameInputField: {fileID: 265468821}
   ipInputField: {fileID: 628894160}
   hostIp: {fileID: 1324297605}
