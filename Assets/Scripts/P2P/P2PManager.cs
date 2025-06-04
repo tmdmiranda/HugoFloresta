@@ -47,6 +47,8 @@ public class P2P_Manager : NetworkBehaviour
 
     private readonly Dictionary<ulong, NetworkObject> playerObjects = new Dictionary<ulong, NetworkObject>();
 
+    [SerializeField] private GameObject spawnPoint;
+
     public override void OnNetworkSpawn()
     {
         if (IsClient && IsOwner)
@@ -61,6 +63,7 @@ public class P2P_Manager : NetworkBehaviour
         CreateLobbyUI();
         playerData.OnListChanged += OnPlayerListChanged;
     }
+
 
 
 
@@ -197,6 +200,8 @@ public class P2P_Manager : NetworkBehaviour
 
     private IEnumerator SpawnPlayersOneByOne()
     {
+
+
         Debug.Log("Starting player spawn sequence...");
         if (!IsServer)
         {
@@ -229,7 +234,7 @@ public class P2P_Manager : NetworkBehaviour
                 Debug.Log($"Player already exists for client {clientId}, skipping spawn");
                 continue;
             }
-
+            spawnPoint = GameObject.Find("SpawnPos");
             Vector3 spawnPos = CalculateSpawnPosition(i, clients.Count);
             GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
@@ -262,13 +267,13 @@ public class P2P_Manager : NetworkBehaviour
         Debug.Log("Finished spawning all players");
         SpawnVan();
         enemySpawner.OnNetworkSpawn();
-    }
-
-    private Vector3 CalculateSpawnPosition(int index, int totalPlayers)
+    }    private Vector3 CalculateSpawnPosition(int index, int totalPlayers)
     {
         float radius = 5f;
         float angle = index * (2f * Mathf.PI / totalPlayers);
-        Vector3 center = new Vector3(915f, 50f, 418f);
+        
+        // Use the SpawnPoint GameObject's position instead of hardcoded values
+        Vector3 center = spawnPoint != null ? spawnPoint.transform.position : new Vector3(915f, 50f, 418f);
 
         return center + new Vector3(
             Mathf.Cos(angle) * radius,
@@ -287,12 +292,12 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        Vector3 spawnPoint = new Vector3(915f, 100f, 423f); // start high
-        if (Physics.Raycast(spawnPoint, Vector3.down, out RaycastHit hit, 200f))
+        Vector3 spawnPois = spawnPoint.transform.position; // start high
+        if (Physics.Raycast(spawnPois, Vector3.down, out RaycastHit hit, 200f))
         {
-            spawnPoint = hit.point + Vector3.up * 0.1f; // just above ground
+            spawnPois = hit.point + Vector3.up * 0.1f; // just above ground
         }
-        GameObject van = Instantiate(vanPrefab, spawnPoint, Quaternion.identity);
+        GameObject van = Instantiate(vanPrefab, spawnPois, Quaternion.identity);
         NetworkObject vanNetObj = van.GetComponent<NetworkObject>();
 
         if (vanNetObj == null)
