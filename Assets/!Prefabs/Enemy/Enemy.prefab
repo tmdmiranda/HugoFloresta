@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 8849811822001235466}
   - component: {fileID: -6430901495328347353}
   - component: {fileID: 2321618599537306331}
+  - component: {fileID: 4698061824191457204}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -269,6 +270,20 @@ MonoBehaviour:
   UseRigidBodyForMotion: 1
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
+--- !u!114 &4698061824191457204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8295708178410869919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97e51a516942bb24bb17e0789673fd2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  disappearDistance: 30
+  checkInterval: 0.1
 --- !u!1001 &4076930197237758458
 PrefabInstance:
   m_ObjectHideFlags: 0
