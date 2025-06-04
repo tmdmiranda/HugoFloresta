@@ -11,11 +11,10 @@ public class UniquePlayer : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        
-        if (IsOwner)
-        {
-            ApplyVisualCustomization();
-        }
+
+        ApplyVisualCustomization();
+            
+        Debug.Log($"UniquePlayer OnNetworkSpawn called for {OwnerClientId}", this);
     }
 
     public void SetPlayerName(string name)
