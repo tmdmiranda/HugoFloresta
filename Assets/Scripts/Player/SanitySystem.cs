@@ -18,7 +18,10 @@ public class SanitySystem : NetworkBehaviour
     
     public override void OnNetworkSpawn()
     {
-        currentSanity.Value = maxSanity;
+        if (IsServer)
+        {
+            currentSanity.Value = maxSanity;
+        }
         currentSanity.OnValueChanged += OnSanityChanged;
     }
     
