@@ -264,6 +264,7 @@ public class P2P_Manager : NetworkBehaviour
         Debug.Log("Finished spawning all players");
         SpawnVan();
         SpawnRoleta();
+        Debug.Log("Spawning enemies... COMEEEE ONNNN");
         enemySpawner.OnNetworkSpawn();
     }
 
@@ -308,32 +309,71 @@ public class P2P_Manager : NetworkBehaviour
         Debug.Log("Van spawned successfully");
     }
 
-        public void SpawnRoleta()
+    public void SpawnRoleta()
     {
-        if (!IsServer) return;
-
-        if (vanPrefab == null)
+                if (Roleta == null)
         {
-            Debug.LogError("Van prefab not found in Resources!");
+            Debug.LogError("tiremistoxdd: ROLETA NULL");
             return;
         }
 
-        Vector3 spawnPoint = new Vector3(900f, 100f, 423f); // start high
-        if (Physics.Raycast(spawnPoint, Vector3.down, out RaycastHit hit, 200f))
+        Vector3 initialSpawnPosition = new Vector3(900f, 100f, 423f); // atart high
+        Vector3 finalSpawnPoint = initialSpawnPosition;
+
+        RaycastHit hit;
+        if (Physics.Raycast(initialSpawnPosition, Vector3.down, out hit, 500f)) // adicionei um quito +dist
         {
-            spawnPoint = hit.point + Vector3.up * 0.1f; // just above ground
+            finalSpawnPoint = hit.point + (Vector3.up * 0.1f);
+            Debug.Log($"hit:{hit.point} final:{finalSpawnPoint}");
         }
-        GameObject roleta = Instantiate(Roleta, spawnPoint, Quaternion.identity);
-        NetworkObject roletaNetObj = roleta.GetComponent<NetworkObject>();
+        else
+        {
+            Debug.LogWarning($"raycast fail");
+        }
+
+        GameObject roletaInstance = null;
+        try
+        {
+            Debug.Log($"vou instanciar roleta a {finalSpawnPoint}");
+            roletaInstance = Instantiate(Roleta, finalSpawnPoint, Quaternion.identity);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"ardeu aqui {e.Message}\n{e.StackTrace}");
+            if (roletaInstance != null)
+                Destroy(roletaInstance);
+        return;
+        }
+
+
+        if (roletaInstance == null)
+        {
+            Debug.LogError("nao consegui spawnar roleta, checkar cenas anteriores.");
+            return;
+        }
+
+        Debug.Log($"roleta criada: {roletaInstance.name}");
+
+         NetworkObject roletaNetObj = roletaInstance.GetComponent<Unity.Netcode.NetworkObject>();
 
         if (roletaNetObj == null)
         {
-            Debug.LogError("Van prefab is missing NetworkObject component!");
-            return;
+            Debug.LogError("netobj null");
+            Destroy(roletaInstance);
+        return;
         }
 
-        roletaNetObj.Spawn();
-        Debug.Log("Van spawned successfully");
+        Debug.Log("correu tdbem?.");
+        try
+        {
+            roletaNetObj.Spawn();
+            Debug.Log($"spawnou");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"mega shit: {e.Message}\n{e.StackTrace}");
+            Destroy(roletaInstance);
+        }
     }
 
 
@@ -350,7 +390,7 @@ public class P2P_Manager : NetworkBehaviour
     {
 
         var playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-        
+
         if (playerObject != null)
         {
             playerObjects[clientId] = playerObject;

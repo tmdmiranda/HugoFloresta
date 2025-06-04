@@ -63,6 +63,17 @@ public class EnemyAI : NetworkBehaviour
         bool isIdle = !isWalking;
         animator.SetBool("isWalking", isWalking);
         animator.SetBool("isIdle", isIdle);
+
+        // Rodar o inimigo para a direção do movimento
+        if (agent != null && agent.isOnNavMesh && agent.velocity.magnitude > 0.1f)
+        {
+            Vector3 direction = agent.velocity.normalized;
+            if (direction != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            }
+        }
     }
 
     // Configura os parâmetros do NavMeshAgent conforme as definições públicas
