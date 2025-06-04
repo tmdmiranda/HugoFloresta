@@ -1,6 +1,6 @@
 using UnityEngine;
-
-public class JumpscareEnemy : MonoBehaviour
+using Unity.Netcode;
+public class JumpscareEnemy : NetworkBehaviour
 {
     public float disappearDistance = 30f;
     public float checkInterval = 0.1f;
@@ -21,12 +21,18 @@ public class JumpscareEnemy : MonoBehaviour
             if (IsSeenByPlayer())
             {
                 isDisappearing = true;
-                Destroy(gameObject);
+                if (IsServer)
+                {
+                    Destroy(gameObject);
+                }
                 yield break;
             }
             if (Vector3.Distance(transform.position, player.position) > disappearDistance)
             {
-                Destroy(gameObject);
+                if (IsServer)
+                {
+                    Destroy(gameObject);
+                }
                 yield break;
             }
             yield return new WaitForSeconds(checkInterval);
