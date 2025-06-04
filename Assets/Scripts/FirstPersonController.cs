@@ -30,9 +30,21 @@ public class FirstPersonController : NetworkBehaviour
     [SerializeField] private PlayerInputHandler playerInputHandler;
     [SerializeField] private Transform playerBody;
 
+    [Header("Animation")]
+    [SerializeField] private float animationSmoothTime = 0.1f;
+    [SerializeField] private float walkAnimationSpeed = 0.5f;
+    [SerializeField] private float sprintAnimationSpeed = 1f;
+    [SerializeField] private float crouchAnimationSpeed = 0.3f;
+
+    private float currentAnimationSpeed;
+    private Vector2 currentAnimationBlend;
+    private Vector2 animationVelocity;
+
     private Vector3 currentMovement;
     private float verticalRotation;
     private float CurrentSpeed => walkSpeed * (playerInputHandler.SprintTriggered ? sprintMultiplier : 1);
+
+    [SerializeField] private Animator animator;
 
     // Network crouch state
     private NetworkVariable<bool> isCrouchingNetwork = new NetworkVariable<bool>();
@@ -77,9 +89,9 @@ public class FirstPersonController : NetworkBehaviour
         {
             HandleMovement();
             HandleCrouching();
+            UpdateAnimations(); // Moved animation updates to a separate method
         }
     }
-
     private Vector3 CalculateWorldDirection()
     {
         Vector3 inputDirection = new Vector3(playerInputHandler.MovementInput.x, 0f, playerInputHandler.MovementInput.y);
@@ -112,6 +124,40 @@ public class FirstPersonController : NetworkBehaviour
 
         HandleJumping();
         characterController.Move(currentMovement * Time.deltaTime);
+    }
+
+        private void UpdateAnimations()
+    {
+        // Calculate input magnitude (0 when not moving, 1 when moving at full speed)
+        float inputMagnitude = playerInputHandler.MovementInput.magnitude;
+        
+        // Blend animation parameters smoothly
+            currentAnimationBlend = Vector2.SmoothDamp(
+            currentAnimationBlend, 
+            playerInputHandler.MovementInput, 
+            ref animationVelocity, 
+            animationSmoothTime
+        );
+
+        // Set animation parameters
+        if (isCrouchingNetwork.Value)
+        {
+            currentAnimationSpeed = Mathf.Lerp(0, crouchAnimationSpeed, inputMagnitude);
+        }
+        else if (playerInputHandler.SprintTriggered)
+        {
+            currentAnimationSpeed = Mathf.Lerp(0, sprintAnimationSpeed, inputMagnitude);
+        }
+        else
+        {
+            currentAnimationSpeed = Mathf.Lerp(0, walkAnimationSpeed, inputMagnitude);
+        }
+
+        animator.SetFloat("Speed", currentAnimationSpeed);
+        animator.SetFloat("Horizontal", currentAnimationBlend.x);
+        animator.SetFloat("Vertical", currentAnimationBlend.y);
+        animator.SetBool("IsCrouching", isCrouchingNetwork.Value);
+        animator.SetBool("IsGrounded", characterController.isGrounded);
     }
 
     private void ApplyHorizontalRotation(float rotationAmount)
