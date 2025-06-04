@@ -15,15 +15,11 @@ public class SanitySystem : NetworkBehaviour
         
     private int enemiesChasing = 0;
     private Coroutine sanityLossCoroutine;
-    
-    public override void OnNetworkSpawn()
+      public override void OnNetworkSpawn()
     {
-        if (IsServer)
-        {
-            currentSanity.Value = maxSanity;
-        }
         if (IsOwner)
         {
+            currentSanity.Value = maxSanity;
             currentSanity.OnValueChanged += OnSanityChanged;
         }
     }
