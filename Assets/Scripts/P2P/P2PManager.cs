@@ -263,9 +263,8 @@ public class P2P_Manager : NetworkBehaviour
 
         Debug.Log("Finished spawning all players");
         SpawnVan();
-        SpawnRoleta();
-        Debug.Log("Spawning enemies... COMEEEE ONNNN");
         enemySpawner.OnNetworkSpawn();
+        SpawnRoleta();
     }
 
     private Vector3 CalculateSpawnPosition(int index, int totalPlayers)
@@ -308,6 +307,7 @@ public class P2P_Manager : NetworkBehaviour
         vanNetObj.Spawn();
         Debug.Log("Van spawned successfully");
     }
+    
 
     public void SpawnRoleta()
     {
