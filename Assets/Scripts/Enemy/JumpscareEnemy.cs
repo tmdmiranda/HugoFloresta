@@ -38,7 +38,6 @@ public class JumpscareEnemy : MonoBehaviour
         if (Camera.main == null) return false;
         Vector3 toEnemy = (transform.position - Camera.main.transform.position).normalized;
         float dot = Vector3.Dot(Camera.main.transform.forward, toEnemy);
-        // Considera "visto" se estiver na frente da câmera (ajuste o valor se necessário)
         if (dot > 0.7f)
         {
             Ray ray = new Ray(Camera.main.transform.position, toEnemy);

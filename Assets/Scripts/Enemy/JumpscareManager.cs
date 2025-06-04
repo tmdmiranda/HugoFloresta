@@ -5,7 +5,7 @@ public class JumpscareManager : MonoBehaviour
 {
     public GameObject jumpscareEnemyPrefab;
     public float spawnRadius = 5f;
-    public float checkInterval = 120f; // 2 minutos
+    public float checkInterval = 120f;
     [Range(0, 100)] public float chancePercent = 30f;
 
     void Start()
