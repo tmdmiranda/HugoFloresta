@@ -202,8 +202,14 @@ public class FirstPersonController : NetworkBehaviour
             state.Vertical != networkedAnimationState.Value.Vertical ||
             state.IsGrounded != networkedAnimationState.Value.IsGrounded)
         {
-            UpdateAnimationStateClientRpc(state);
+            UpdateAnimationStateServerRpc(state);
         }
+    }
+
+    [ServerRpc]
+    private void UpdateAnimationStateServerRpc(NetworkedAnimationState state)
+    {
+        UpdateAnimationStateClientRpc(state);
     }
 
     [ClientRpc]
