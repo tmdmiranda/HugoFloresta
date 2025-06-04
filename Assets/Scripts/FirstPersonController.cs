@@ -102,9 +102,6 @@ public class FirstPersonController : NetworkBehaviour
     private void OnAnimationStateChanged(NetworkedAnimationState previousValue, NetworkedAnimationState newValue)
     {
         animator.SetFloat("Speed", newValue.Speed);
-        animator.SetFloat("Horizontal", newValue.Horizontal);
-        animator.SetFloat("Vertical", newValue.Vertical);
-        animator.SetBool("IsGrounded", newValue.IsGrounded);
     }
 
     void Update()
@@ -184,10 +181,6 @@ public class FirstPersonController : NetworkBehaviour
         }
 
         animator.SetFloat("Speed", currentAnimationSpeed);
-        animator.SetFloat("Horizontal", currentAnimationBlend.x);
-        animator.SetFloat("Vertical", currentAnimationBlend.y);
-        animator.SetBool("IsCrouching", isCrouchingNetwork.Value);
-        animator.SetBool("IsGrounded", characterController.isGrounded);
 
         NetworkedAnimationState state = new NetworkedAnimationState
         {

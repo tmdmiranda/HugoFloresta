@@ -386,6 +386,7 @@ GameObject:
   - component: {fileID: 1385355051535317416}
   - component: {fileID: 909864975159176091}
   - component: {fileID: 4651510207227892111}
+  - component: {fileID: 9199211619693094101}
   m_Layer: 0
   m_Name: PlayerP2PFinal
   m_TagString: Player
@@ -736,6 +737,22 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &9199211619693094101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7591108086318982121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6c8c776d320c940b79e48ed3c38545, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxSanity: 100
+  sanityLoss: 1
+  timeLossInterval: 5
 --- !u!1001 &2148350272126294034
 PrefabInstance:
   m_ObjectHideFlags: 0

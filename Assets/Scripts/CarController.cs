@@ -111,7 +111,7 @@ public class CarController : NetworkBehaviour
     {
         if (!IsSpawned) return;
 
-        Debug.Log("Am i driving" + AmITheDriver());
+        // Debug.Log("Am i driving" + AmITheDriver());
         if (AmITheDriver() == true)
         {
             GetInput();
@@ -120,7 +120,7 @@ public class CarController : NetworkBehaviour
         // Only the owner handles physics
         if (IsOwner)
         {
-            Debug.Log($"[CarController] FixedUpdate - IsOwner: {IsOwner}, playerInsideCar: {playerInsideCar}, HasDriver: {HasDriver}");
+            // Debug.Log($"[CarController] FixedUpdate - IsOwner: {IsOwner}, playerInsideCar: {playerInsideCar}, HasDriver: {HasDriver}");
 
             HandleMotor();
             HandleSteering();
@@ -188,8 +188,6 @@ public class CarController : NetworkBehaviour
             else if (playerInsideCar)
                 ExitCar();
         }
-
-        Debug.Log("Seats" + seatOccupants[0] + " " + seatOccupants[1] + " " + seatOccupants[2] + " " + seatOccupants[3] + " " + seatOccupants[4] + " " + seatOccupants[5]);
 
         if (playerInsideCar)
         {
@@ -398,7 +396,7 @@ public class CarController : NetworkBehaviour
 
     private void HandleMotor()
     {
-        Debug.Log($"[CarController] HandleMotor - verticalInput: {verticalInput}, isBreaking: {isBreaking}");
+        // Debug.Log($"[CarController] HandleMotor - verticalInput: {verticalInput}, isBreaking: {isBreaking}");
         frontLeftWheelCollider.motorTorque = verticalInput * motorForce;
         frontRightWheelCollider.motorTorque = verticalInput * motorForce;
         currentbreakForce = isBreaking ? breakForce : 0f;

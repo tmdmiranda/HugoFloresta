@@ -15,10 +15,10 @@ GameObject:
   - component: {fileID: 6832141845974700897}
   - component: {fileID: -6813452104333743886}
   - component: {fileID: 825279476472832818}
+  - component: {fileID: 4698061824191457204}
   - component: {fileID: 8849811822001235466}
   - component: {fileID: -6430901495328347353}
   - component: {fileID: 2321618599537306331}
-  - component: {fileID: 4698061824191457204}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -81,7 +81,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 0
-  AuthorityMode: 0
+  AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
@@ -189,6 +189,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 10
+  speed: 10
   rotationSpeed: 200
   acceleration: 25
   stoppingDistance: 0.1
@@ -200,6 +201,21 @@ MonoBehaviour:
   wanderRadius: 5
   wanderTimer: 5
   minWanderDistance: 2
+--- !u!114 &4698061824191457204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8295708178410869919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97e51a516942bb24bb17e0789673fd2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  disappearDistance: 30
+  checkInterval: 0.1
 --- !u!33 &8849811822001235466
 MeshFilter:
   m_ObjectHideFlags: 0
