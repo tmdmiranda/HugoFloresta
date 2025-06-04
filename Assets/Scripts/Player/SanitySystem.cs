@@ -22,7 +22,10 @@ public class SanitySystem : NetworkBehaviour
         {
             currentSanity.Value = maxSanity;
         }
-        currentSanity.OnValueChanged += OnSanityChanged;
+        if (IsOwner)
+        {
+            currentSanity.OnValueChanged += OnSanityChanged;
+        }
     }
     
     private void OnSanityChanged(float oldValue, float newValue)
@@ -66,7 +69,8 @@ public class SanitySystem : NetworkBehaviour
             
             if (IsOwner && enemiesChasing > 0)
             {
-                currentSanity.Value = Mathf.Max(0, currentSanity.Value - sanityLoss);
+                float newSanity = Mathf.Max(0, currentSanity.Value - sanityLoss);
+                currentSanity.Value = newSanity;
             }
         }
         sanityLossCoroutine = null;
