@@ -9,6 +9,8 @@ public class RouletteUIManager : MonoBehaviour
     public Button blackButton;
     public Button greenButton;
 
+    public SpinRouletteManager spinManager;
+    public BallLauncher ballLauncher;
     private void Start()
     {
         uiPanel.SetActive(false);
@@ -25,6 +27,8 @@ public class RouletteUIManager : MonoBehaviour
         uiPanel.SetActive(false);
 
     }
+
+    
 
     private void OnTriggerEnter(Collider other)
     {
