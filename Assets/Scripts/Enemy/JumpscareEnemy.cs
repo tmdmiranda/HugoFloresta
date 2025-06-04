@@ -39,7 +39,10 @@ public class JumpscareEnemy : NetworkBehaviour
         }
     }
 
+    // Premissão para ownership do despawn
     [ServerRpc(RequireOwnership = false)]
+    
+    // Função para solicitar o despawn do inimigo
     private void RequestDespawnServerRpc()
     {
         // Esta função é executada no servidor
@@ -51,6 +54,7 @@ public class JumpscareEnemy : NetworkBehaviour
         //Destroy(gameObject)
     }
 
+    // Verifica se o inimigo está a ser visto pelo jogador
     bool IsSeenByPlayer()
     {
         if (Camera.main == null) return false;
@@ -72,6 +76,7 @@ public class JumpscareEnemy : NetworkBehaviour
         return false;
     }
 
+    // Retorna um jogador aleatório do jogo
     Transform ChooseRandomPlayer()
     {
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");

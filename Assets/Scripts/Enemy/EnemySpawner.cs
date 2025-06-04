@@ -2,7 +2,6 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.AI;
 
-// Classe responsável por gerar (spawnar) inimigos no cenário
 public class EnemySpawner : NetworkBehaviour
 {
     [Header("Spawn Settings")]
