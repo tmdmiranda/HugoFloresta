@@ -2,6 +2,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Linq;
+using System.Collections;
 
 public class CarController : NetworkBehaviour
 {
@@ -545,8 +546,7 @@ public class CarController : NetworkBehaviour
         if (playerCameraY != null)
             playerCameraY.localRotation = Quaternion.Euler(0f, 0f, 0f);
 
-        if (player.TryGetComponent<Collider>(out var playerCol) &&
-        TryGetComponent<Collider>(out var carCol))
+        if (player.TryGetComponent<Collider>(out var playerCol) && TryGetComponent<Collider>(out var carCol))
         {
             Physics.IgnoreCollision(playerCol, carCol, true);
             StartCoroutine(ReenableCollisionAfterDelay(playerCol, carCol, 0.5f));
@@ -555,7 +555,7 @@ public class CarController : NetworkBehaviour
         RequestExitCarServerRpc(playerNetObj.OwnerClientId, exitPoint.position);
     }
 
-    private System.Collections.IEnumerator ReenableCollisionAfterDelay(Collider playerCol, Collider carCol, float delay)
+    private IEnumerator ReenableCollisionAfterDelay(Collider playerCol, Collider carCol, float delay)
     {
         yield return new WaitForSeconds(delay);
         Physics.IgnoreCollision(playerCol, carCol, false);
