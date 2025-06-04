@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 1891452857317694762}
   - component: {fileID: 3220104280866376388}
   - component: {fileID: 9079930318739642772}
-  - component: {fileID: 3427707168012694073}
   m_Layer: 0
   m_Name: Beacon
   m_TagString: Untagged
@@ -117,7 +116,7 @@ ParticleSystem:
     startLifetime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 5
+      scalar: 15
       minScalar: 5
       maxCurve:
         serializedVersion: 2
@@ -871,7 +870,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 2500
+      scalar: 3000
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -4834,21 +4833,6 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
---- !u!114 &3427707168012694073
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5038177328817789081}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af0f8a7576d792746a611cdcfd5e1593, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  beaconParticles: {fileID: 3220104280866376388}
-  beaconColor: {r: 0.2, g: 0.6, b: 1, a: 0.8}
-  intensity: 1
 --- !u!1001 &3967628926656566399
 PrefabInstance:
   m_ObjectHideFlags: 0
