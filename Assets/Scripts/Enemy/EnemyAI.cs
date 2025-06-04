@@ -57,34 +57,6 @@ public class EnemyAI : NetworkBehaviour
         // Só o servidor executa a lógica de movimento
         if (!IsServer) return;
 
-        // Procura o jogador mais próximo
-        GameObject nearestPlayer = FindClosestPlayer();
-        if (nearestPlayer != null)
-        {
-            float dist = Vector3.Distance(transform.position, nearestPlayer.transform.position);
-            // Se estiver longe o suficiente, persegue o jogador
-            if (dist > stoppingDistance)
-            {
-                if (agent != null && agent.isOnNavMesh)
-                {
-                    agent.SetDestination(nearestPlayer.transform.position);
-                    agent.speed = speed + 200f;
-                }
-            }
-            // Se estiver suficientemente perto, para o movimento
-            else
-            {
-                if (agent != null && agent.isOnNavMesh)
-                {
-                    agent.ResetPath();
-                }
-            }
-        }
-        else
-        {
-            Wander();
-        }
-
         // definir valores de animação
         float animSpeed = (agent != null && agent.isOnNavMesh) ? agent.velocity.magnitude : 0f;
         bool isWalking = animSpeed > 0.1f;
