@@ -307,11 +307,11 @@ public class P2P_Manager : NetworkBehaviour
         vanNetObj.Spawn();
         Debug.Log("Van spawned successfully");
     }
-    
+
 
     public void SpawnRoleta()
     {
-                if (Roleta == null)
+        if (Roleta == null)
         {
             Debug.LogError("tiremistoxdd: ROLETA NULL");
             return;
@@ -342,7 +342,7 @@ public class P2P_Manager : NetworkBehaviour
             Debug.LogError($"ardeu aqui {e.Message}\n{e.StackTrace}");
             if (roletaInstance != null)
                 Destroy(roletaInstance);
-        return;
+            return;
         }
 
 
@@ -354,13 +354,13 @@ public class P2P_Manager : NetworkBehaviour
 
         Debug.Log($"roleta criada: {roletaInstance.name}");
 
-         NetworkObject roletaNetObj = roletaInstance.GetComponent<Unity.Netcode.NetworkObject>();
+        NetworkObject roletaNetObj = roletaInstance.GetComponent<Unity.Netcode.NetworkObject>();
 
         if (roletaNetObj == null)
         {
             Debug.LogError("netobj null");
             Destroy(roletaInstance);
-        return;
+            return;
         }
 
         Debug.Log("correu tdbem?.");
