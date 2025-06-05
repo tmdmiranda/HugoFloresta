@@ -15,10 +15,10 @@ GameObject:
   - component: {fileID: 6832141845974700897}
   - component: {fileID: -6813452104333743886}
   - component: {fileID: 825279476472832818}
-  - component: {fileID: 4698061824191457204}
   - component: {fileID: 8849811822001235466}
   - component: {fileID: -6430901495328347353}
   - component: {fileID: 2321618599537306331}
+  - component: {fileID: -7474703777157820940}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -87,9 +87,9 @@ MonoBehaviour:
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
-  SyncRotAngleX: 0
-  SyncRotAngleY: 0
-  SyncRotAngleZ: 0
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
@@ -113,11 +113,11 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 0.5
-  m_Speed: 3.5
-  m_Acceleration: 8
+  m_Speed: 20
+  m_Acceleration: 20
   avoidancePriority: 50
   m_AngularSpeed: 120
-  m_StoppingDistance: 0.5
+  m_StoppingDistance: 0
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 0
   m_AutoRepath: 1
@@ -147,7 +147,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 1
   m_Constraints: 80
@@ -188,34 +188,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  speed: 10
-  rotationSpeed: 200
-  acceleration: 50
-  stoppingDistance: 0.1
+  speed: 20
+  angularSpeed: 120
+  acceleration: 20
+  stoppingDistance: 0
   detectionRange: 30
   followRefreshRate: 0.01
   obstacleLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  wanderRadius: 5
-  wanderTimer: 5
-  minWanderDistance: 2
+  wanderRadius: 20
+  wanderTimer: 15
+  minWanderDistance: 10
   animator: {fileID: 7238467698898982755}
---- !u!114 &4698061824191457204
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8295708178410869919}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 97e51a516942bb24bb17e0789673fd2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  disappearDistance: 30
-  checkInterval: 0.1
 --- !u!33 &8849811822001235466
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -286,6 +271,22 @@ MonoBehaviour:
   UseRigidBodyForMotion: 1
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
+--- !u!114 &-7474703777157820940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8295708178410869919}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d03c8810d26b3b43a7e041917a7a740, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  jumpscareEnemyPrefab: {fileID: 8295708178410869919}
+  spawnRadius: 5
+  checkInterval: 120
+  chancePercent: 30
 --- !u!1001 &4396819403630687401
 PrefabInstance:
   m_ObjectHideFlags: 0

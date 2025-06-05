@@ -7,7 +7,7 @@ public class EnemyAI : NetworkBehaviour
 {
     [Header("Movement Settings")]
     public float speed = 3f; // Velocidade de movimento do inimigo
-    public float rotationSpeed = 120f; // Velocidade de rotação do inimigo
+    public float angularSpeed = 120f; // Velocidade de rotação do inimigo
     public float acceleration = 8f; // Aceleração do inimigo ao iniciar movimento
     public float stoppingDistance = 1f; // Distância mínima para parar ao aproximar-se do alvo
 
@@ -63,13 +63,24 @@ public class EnemyAI : NetworkBehaviour
         bool isIdle = !isWalking;
         animator.SetBool("isWalking", isWalking);
         animator.SetBool("isIdle", isIdle);
+
+        // Rodar o inimigo para a direção do movimento
+        if (agent != null && agent.isOnNavMesh && agent.velocity.magnitude > 0.1f)
+        {
+            Vector3 direction = agent.velocity.normalized;
+            if (direction != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, angularSpeed * Time.deltaTime);
+            }
+        }
     }
 
     // Configura os parâmetros do NavMeshAgent conforme as definições públicas
     void ConfigureAgent()
     {
         agent.speed = speed;
-        agent.angularSpeed = rotationSpeed;
+        agent.angularSpeed = angularSpeed;
         agent.acceleration = acceleration;
         agent.stoppingDistance = stoppingDistance;
         agent.autoBraking = false;
@@ -187,41 +198,14 @@ public class EnemyAI : NetworkBehaviour
             agent.SetDestination(wanderPoint);
         }
         float startTime = Time.time;
-
-        // Acelera gradualmente
-        currentSpeed = 0;
-        float accelerateTime = 0.5f;
-        float elapsedTime = 0;
-
-        while (elapsedTime < accelerateTime && agent != null && agent.isActiveAndEnabled)
-        {
-            currentSpeed = Mathf.Lerp(0, speed, elapsedTime / accelerateTime);
-            agent.speed = currentSpeed;
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
+        currentSpeed = speed;
 
         // Mantém a velocidade enquanto patrulha
-        while (agent != null && agent.isActiveAndEnabled &&
-               Time.time - startTime < wanderTimer &&
-               agent.pathPending == false &&
-               agent.remainingDistance > agent.stoppingDistance)
+        while (agent != null && agent.isActiveAndEnabled && Time.time - startTime < wanderTimer && agent.pathPending == false && agent.remainingDistance > agent.stoppingDistance)
         {
-            currentSpeed = Mathf.Lerp(currentSpeed, speed, Time.deltaTime);
-            agent.speed = currentSpeed;
-            yield return null;
-        }
-
-        // Desacelera gradualmente
-        elapsedTime = 0;
-        float decelerateTime = 0.3f;
-        float startDecelSpeed = currentSpeed;
-
-        while (elapsedTime < decelerateTime && agent != null && agent.isActiveAndEnabled)
-        {
-            currentSpeed = Mathf.Lerp(startDecelSpeed, 0, elapsedTime / decelerateTime);
-            agent.speed = currentSpeed;
-            elapsedTime += Time.deltaTime;
+            agent.speed = speed;
+            /*if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+                break;*/
             yield return null;
         }
 

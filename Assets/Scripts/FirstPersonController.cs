@@ -28,13 +28,27 @@ public class FirstPersonController : NetworkBehaviour
     [SerializeField] private CharacterController characterController;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private PlayerInputHandler playerInputHandler;
-    [SerializeField] private Transform playerBody;
-
-    [Header("Animation")]
+    [SerializeField] private Transform playerBody;    [Header("Animation")]
     [SerializeField] private float animationSmoothTime = 0.1f;
     [SerializeField] private float walkAnimationSpeed = 0.5f;
     [SerializeField] private float sprintAnimationSpeed = 1f;
-    [SerializeField] private float crouchAnimationSpeed = 0.3f;
+    [SerializeField] private float crouchAnimationSpeed = 0.3f;    [Header("Crouch Parameters")]
+    [SerializeField] private float standingHeight = 2f;
+    [SerializeField] private float crouchHeight = 1f;
+    [SerializeField] private Vector3 standingCenter = new Vector3(0, 0, 0);
+    [SerializeField] private Vector3 crouchCenter = new Vector3(0, -0.5f, 0);
+    [SerializeField] private Vector3 standingCameraPosition = new Vector3(0, 0.7f, 0);
+    [SerializeField] private Vector3 crouchCameraPosition = new Vector3(0, 0, 0);
+    [SerializeField] private Vector3 standingBodyPosition = new Vector3(0, 0, 0);
+    [SerializeField] private Vector3 crouchBodyPosition = new Vector3(0, -0.5f, 0);
+    [SerializeField] private Vector3 crouchBodyScale = new Vector3(1, 0.5f, 1);
+    
+    // Original transforms (captured at start)
+    private Vector3 originalBodyScale;
+    private Vector3 originalBodyPosition;
+    private Vector3 originalCameraPosition;
+    private Vector3 originalCharacterCenter;
+    private float originalCharacterHeight;
 
     private float currentAnimationSpeed;
     private Vector2 currentAnimationBlend;
@@ -66,10 +80,24 @@ public class FirstPersonController : NetworkBehaviour
     private NetworkVariable<NetworkedAnimationState> networkedAnimationState = new NetworkVariable<NetworkedAnimationState>();
 
     // Network crouch state
-    private NetworkVariable<bool> isCrouchingNetwork = new NetworkVariable<bool>();
-
-    void Start()
+    private NetworkVariable<bool> isCrouchingNetwork = new NetworkVariable<bool>();    void Start()
     {
+        // Capture original transform values
+        if (playerBody != null)
+        {
+            originalBodyScale = playerBody.localScale;
+            originalBodyPosition = playerBody.localPosition;
+        }
+        if (mainCamera != null)
+        {
+            originalCameraPosition = mainCamera.transform.localPosition;
+        }
+        if (characterController != null)
+        {
+            originalCharacterCenter = characterController.center;
+            originalCharacterHeight = characterController.height;
+        }
+
         if (IsOwner)
         {
             Cursor.lockState = CursorLockMode.Locked;
@@ -237,34 +265,34 @@ public class FirstPersonController : NetworkBehaviour
         {
             SetCrouchStateServerRpc(playerInputHandler.CrouchTriggered);
         }
-    }
-
-    private void ApplyCrouchState(bool shouldCrouch)
+    }    private void ApplyCrouchState(bool shouldCrouch)
     {
         if (characterController == null) return;
 
         if (shouldCrouch)
         {
-            characterController.height = 1f;
-            characterController.center = new Vector3(0, -0.5f, 0);
-            mainCamera.transform.localPosition = new Vector3(0, 0, 0);
+            // Apply crouch configuration
+            characterController.height = crouchHeight;
+            characterController.center = crouchCenter;
+            mainCamera.transform.localPosition = crouchCameraPosition;
 
             if (playerBody != null)
             {
-                playerBody.localPosition = new Vector3(0, -0.5f, 0);
-                playerBody.localScale = new Vector3(1, 0.5f, 1);
+                playerBody.localPosition = crouchBodyPosition;
+                playerBody.localScale = crouchBodyScale;
             }
         }
         else
         {
-            characterController.height = 2f;
-            characterController.center = new Vector3(0, 0, 0);
-            mainCamera.transform.localPosition = new Vector3(0, 0.7f, 0);
+            // Apply standing configuration using original values
+            characterController.height = originalCharacterHeight;
+            characterController.center = originalCharacterCenter;
+            mainCamera.transform.localPosition = originalCameraPosition;
 
             if (playerBody != null)
             {
-                playerBody.localPosition = new Vector3(0, 0, 0);
-                playerBody.localScale = new Vector3(1, 1, 1);
+                playerBody.localPosition = originalBodyPosition;
+                playerBody.localScale = originalBodyScale;
             }
         }
     }
