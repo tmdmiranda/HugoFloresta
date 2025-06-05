@@ -40,6 +40,7 @@ public class P2P_Manager : NetworkBehaviour
 
     private readonly Dictionary<ulong, NetworkObject> playerObjects = new Dictionary<ulong, NetworkObject>();
     [SerializeField] private GameObject spawnPoint;
+    [SerializeField] private GameObject vanspawnPoint;
     [SerializeField] GameObject vanPrefab;
 
     public struct PlayerLobbyData : INetworkSerializable, IEquatable<PlayerLobbyData>
@@ -221,6 +222,7 @@ public class P2P_Manager : NetworkBehaviour
             }
 
             spawnPoint = GameObject.Find("SpawnPos");
+            vanspawnPoint = GameObject.Find("VanSpawnPos");
             Vector3 spawnPos = CalculateSpawnPosition(i, clients.Count);
             GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
@@ -277,7 +279,7 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        Vector3 spawnPois = spawnPoint.transform.position;
+        Vector3 spawnPois = vanspawnPoint.transform.position;
         if (Physics.Raycast(spawnPois, Vector3.down, out RaycastHit hit, 200f))
         {
             spawnPois = hit.point + Vector3.up * 0.1f;
