@@ -5,8 +5,8 @@ public class JumpscareManager : MonoBehaviour
 {
     public GameObject jumpscareEnemyPrefab;
     public float spawnRadius = 5f;
-    public float checkInterval = 120f;
-    [Range(0, 100)] public float chancePercent = 30f;
+    public float checkInterval = 10f;
+    [Range(0, 100)] public float chancePercent = 100f;
 
     void Start()
     {
@@ -15,6 +15,7 @@ public class JumpscareManager : MonoBehaviour
 
     IEnumerator JumpscareRoutine()
     {
+        Debug.Log("intevral: " + checkInterval);
         int countdown = Mathf.RoundToInt(checkInterval);
         GameObject jumpscareInstance = null;
         while (true)
