@@ -80,7 +80,24 @@ public class FirstPersonController : NetworkBehaviour
     private NetworkVariable<NetworkedAnimationState> networkedAnimationState = new NetworkVariable<NetworkedAnimationState>();
 
     // Network crouch state
-    private NetworkVariable<bool> isCrouchingNetwork = new NetworkVariable<bool>();    void Start()
+    private NetworkVariable<bool> isCrouchingNetwork = new NetworkVariable<bool>();    [Header("Network Synchronization")]
+    [SerializeField] private float networkSendRate = 20f; // How often to send updates per second
+    private float lastNetworkSendTime;
+    
+    // Network position/rotation for non-owners
+    private NetworkVariable<Vector3> networkPosition = new NetworkVariable<Vector3>(
+        Vector3.zero, 
+        NetworkVariableReadPermission.Everyone, 
+        NetworkVariableWritePermission.Owner
+    );
+    
+    private NetworkVariable<Quaternion> networkRotation = new NetworkVariable<Quaternion>(
+        Quaternion.identity, 
+        NetworkVariableReadPermission.Everyone, 
+        NetworkVariableWritePermission.Owner
+    );
+
+    void Start()
     {
         // Capture original transform values
         if (playerBody != null)
@@ -98,6 +115,9 @@ public class FirstPersonController : NetworkBehaviour
             originalCharacterHeight = characterController.height;
         }
 
+        // Clean up conflicting components to prevent position desync
+        CleanupConflictingComponents();
+
         if (IsOwner)
         {
             Cursor.lockState = CursorLockMode.Locked;
@@ -114,6 +134,13 @@ public class FirstPersonController : NetworkBehaviour
 
         // Subscribe to animation state changes
         networkedAnimationState.OnValueChanged += OnAnimationStateChanged;
+
+        // Subscribe to network position changes for interpolation
+        if (!IsOwner)
+        {
+            networkPosition.OnValueChanged += OnNetworkPositionChanged;
+            networkRotation.OnValueChanged += OnNetworkRotationChanged;
+        }
     }
 
     public override void OnDestroy()
@@ -134,7 +161,12 @@ public class FirstPersonController : NetworkBehaviour
 
     void Update()
     {
-        if (!IsOwner) return;
+        if (!IsOwner) 
+        {
+            // Non-owners: interpolate to network position
+            InterpolateToNetworkTransform();
+            return;
+        }
 
         if (playerCanLookAround)
         {
@@ -144,9 +176,52 @@ public class FirstPersonController : NetworkBehaviour
         {
             HandleMovement();
             HandleCrouching();
-            UpdateAnimations(); // Moved animation updates to a separate method
+            UpdateAnimations();
+        }
+        
+        // Send network updates
+        SendNetworkUpdates();
+    }
+    
+    private void SendNetworkUpdates()
+    {
+        if (!IsOwner) return;
+        
+        // Send position/rotation updates at specified rate
+        if (Time.time - lastNetworkSendTime >= (1f / networkSendRate))
+        {
+            networkPosition.Value = transform.position;
+            networkRotation.Value = transform.rotation;
+            lastNetworkSendTime = Time.time;
         }
     }
+    
+    private void OnNetworkPositionChanged(Vector3 previousValue, Vector3 newValue)
+    {
+        // This will be handled in InterpolateToNetworkTransform()
+    }
+    
+    private void OnNetworkRotationChanged(Quaternion previousValue, Quaternion newValue)
+    {
+        // This will be handled in InterpolateToNetworkTransform()
+    }
+    
+    private void InterpolateToNetworkTransform()
+    {
+        // Smoothly interpolate non-owner players to network position
+        float lerpRate = Time.deltaTime * 15f; // Adjust speed as needed
+        
+        transform.position = Vector3.Lerp(transform.position, networkPosition.Value, lerpRate);
+        transform.rotation = Quaternion.Lerp(transform.rotation, networkRotation.Value, lerpRate);
+        
+        // Ensure player body stays synchronized with main transform
+        if (playerBody != null)
+        {
+            // Player body should follow the main transform
+            // This ensures the 3D model stays with the player position
+        }
+    }
+
     private Vector3 CalculateWorldDirection()
     {
         Vector3 inputDirection = new Vector3(playerInputHandler.MovementInput.x, 0f, playerInputHandler.MovementInput.y);
@@ -304,5 +379,64 @@ public class FirstPersonController : NetworkBehaviour
     private void SetCrouchStateServerRpc(bool state)
     {
         isCrouchingNetwork.Value = state;
+    }
+
+    /// <summary>
+    /// Disables conflicting movement and camera systems to prevent position desync
+    /// This ensures FirstPersonController has full control over player positioning
+    /// </summary>
+    private void CleanupConflictingComponents()
+    {
+        // Disable old P2P movement system
+        var playerMovementP2P = GetComponent<PlayerMovementP2P>();
+        if (playerMovementP2P != null)
+        {
+            playerMovementP2P.enabled = false;
+            Debug.Log("Disabled conflicting PlayerMovementP2P component");
+        }
+
+        // Disable conflicting camera scripts
+        var moveCamera = GetComponent<MoveCamera>();
+        if (moveCamera != null)
+        {
+            moveCamera.enabled = false;
+            Debug.Log("Disabled conflicting MoveCamera component");
+        }
+
+        var playerCam = GetComponent<PlayerCam>();
+        if (playerCam != null)
+        {
+            playerCam.enabled = false;
+            Debug.Log("Disabled conflicting PlayerCam component");
+        }
+
+        // Also check for these components on child objects
+        var childMoveCameras = GetComponentsInChildren<MoveCamera>();
+        foreach (var cam in childMoveCameras)
+        {
+            if (cam != moveCamera) // Don't disable the same one twice
+            {
+                cam.enabled = false;
+                Debug.Log("Disabled conflicting MoveCamera component on child object");
+            }
+        }
+
+        var childPlayerCams = GetComponentsInChildren<PlayerCam>();
+        foreach (var cam in childPlayerCams)
+        {
+            if (cam != playerCam) // Don't disable the same one twice
+            {
+                cam.enabled = false;
+                Debug.Log("Disabled conflicting PlayerCam component on child object");
+            }
+        }
+
+        // Disable any Rigidbody that might interfere (keeping it for physics but removing control)
+        var rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true; // Prevent physics interference with CharacterController
+            Debug.Log("Set Rigidbody to kinematic to prevent physics conflicts");
+        }
     }
 }

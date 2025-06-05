@@ -621,9 +621,7 @@ public class P2P_Manager : NetworkBehaviour
             // We're already in the lobby scene, just reset the UI
             ResetLobbyUI();
         }
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Cleanup all networking components and references
     /// </summary>
     private void CleanupNetworking()
@@ -632,10 +630,16 @@ public class P2P_Manager : NetworkBehaviour
 
         try
         {
-            // Clear player data
-            if (playerData != null && IsServer)
+            // Clear player data for all clients (not just server)
+            if (playerData != null)
             {
-                playerData.Clear();
+                // Unsubscribe from list changes before clearing to prevent events
+                playerData.OnListChanged -= OnPlayerListChanged;
+                
+                if (IsServer)
+                {
+                    playerData.Clear();
+                }
             }
 
             // Clear player objects
@@ -662,6 +666,9 @@ public class P2P_Manager : NetworkBehaviour
             LocalPlayerObject = null;
             LocalClientId = 0;
 
+            // Reset prefab registration flag to allow re-registration
+            isPlayerPrefabRegistered = false;
+
             // Shutdown networking properly
             if (NetworkManager.Singleton != null)
             {
@@ -672,16 +679,36 @@ public class P2P_Manager : NetworkBehaviour
                 if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsClient)
                 {
                     NetworkManager.Singleton.Shutdown();
+                    // Wait for shutdown to complete before allowing reconnection
+                    StartCoroutine(WaitForShutdownAndResubscribe());
                 }
-                
-                // Re-subscribe events after a brief delay for potential reconnection
-                StartCoroutine(ResubscribeNetworkEvents());
+                else
+                {
+                    // Not connected, just re-subscribe events
+                    StartCoroutine(ResubscribeNetworkEvents());
+                }
             }
         }
         catch (System.Exception ex)
         {
             Debug.LogError($"Error during networking cleanup: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Wait for network shutdown to complete before re-subscribing events
+    /// </summary>
+    private System.Collections.IEnumerator WaitForShutdownAndResubscribe()
+    {
+        // Wait for shutdown to complete
+        yield return new WaitUntil(() => NetworkManager.Singleton != null && 
+                                         !NetworkManager.Singleton.IsHost && 
+                                         !NetworkManager.Singleton.IsClient);
+        
+        Debug.Log("Network shutdown complete, re-subscribing events");
+        
+        // Now re-subscribe events for potential reconnection
+        yield return StartCoroutine(ResubscribeNetworkEvents());
     }
 
     /// <summary>
@@ -795,14 +822,12 @@ public class P2P_Manager : NetworkBehaviour
         {
             disconnectButton.onClick.AddListener(ManualDisconnect);
         }
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Re-subscribe to network events after cleanup (for potential reconnection)
     /// </summary>
     private System.Collections.IEnumerator ResubscribeNetworkEvents()
     {
-        yield return new WaitForSeconds(1f); // Wait for cleanup to complete
+        yield return new WaitForSeconds(0.5f); // Wait for cleanup to complete
         
         if (NetworkManager.Singleton != null)
         {
@@ -812,6 +837,13 @@ public class P2P_Manager : NetworkBehaviour
             
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+            
+            // Re-subscribe to player data changes if available
+            if (playerData != null)
+            {
+                playerData.OnListChanged -= OnPlayerListChanged; // Remove first to avoid duplicates
+                playerData.OnListChanged += OnPlayerListChanged;
+            }
             
             Debug.Log("Network events re-subscribed for potential reconnection");
         }
@@ -886,9 +918,7 @@ public class P2P_Manager : NetworkBehaviour
         UpdateStatus($"Host error: {ex.Message}");
         Debug.LogError($"Exception while starting host: {ex}");
     }
-}
-
-    public void OnJoinButtonClicked()
+}    public void OnJoinButtonClicked()
     {
         Debug.Log($"Join button clicked. Attempting to join: {ipInputField.text.Trim()}:{port}");
         
@@ -904,6 +934,7 @@ public class P2P_Manager : NetworkBehaviour
         if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsClient)
         {
             Debug.LogWarning("Already connected! Disconnecting first...");
+            UpdateStatus("Disconnecting from current session...");
             NetworkManager.Singleton.Shutdown();
             // Wait a frame for shutdown to complete, then retry
             StartCoroutine(RetryJoinAfterShutdown());
@@ -931,27 +962,90 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
         
+        // Clear any existing player data before joining
+        if (playerData != null)
+        {
+            playerData.OnListChanged -= OnPlayerListChanged;
+        }
+        
+        // Re-register player prefab if needed
+        if (!isPlayerPrefabRegistered)
+        {
+            RegisterPlayerPrefab();
+        }
+        
         transport.SetConnectionData(targetIP, port);
         UpdateStatus($"Connecting to {targetIP}:{port}...");
+        Debug.Log($"Configured transport to connect to {targetIP}:{port}");
         
-        bool startResult = NetworkManager.Singleton.StartClient();
-        if (!startResult)
+        try
         {
-            Debug.LogError("Failed to start client!");
-            UpdateStatus("Failed to start client");
+            bool startResult = NetworkManager.Singleton.StartClient();
+            if (!startResult)
+            {
+                Debug.LogError("Failed to start client!");
+                UpdateStatus("Failed to start client");
+            }
+            else
+            {
+                Debug.Log($"Client start initiated for {targetIP}:{port}");
+                // Start a timeout coroutine to handle connection failures
+                StartCoroutine(ConnectionTimeoutHandler());
+            }
         }
-        else
+        catch (System.Exception ex)
         {
-            Debug.Log($"Client start initiated for {targetIP}:{port}");
+            Debug.LogError($"Exception while starting client: {ex}");
+            UpdateStatus($"Connection error: {ex.Message}");
         }
     }
     
     /// <summary>
+    /// Handle connection timeout scenarios
+    /// </summary>
+    private System.Collections.IEnumerator ConnectionTimeoutHandler()
+    {
+        float timeout = 10f; // 10 second timeout
+        float elapsed = 0f;
+        
+        while (elapsed < timeout)
+        {
+            if (NetworkManager.Singleton.IsClient && NetworkManager.Singleton.IsConnectedClient)
+            {
+                UpdateStatus("Connected successfully!");
+                yield break; // Connected successfully
+            }
+            
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        
+        // Timeout reached
+        if (!NetworkManager.Singleton.IsConnectedClient)
+        {
+            Debug.LogWarning("Connection attempt timed out");
+            UpdateStatus("Connection timed out - check IP address");
+            
+            if (NetworkManager.Singleton.IsClient)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+        }
+    }
+      /// <summary>
     /// Retry joining after shutdown completes
     /// </summary>
     private System.Collections.IEnumerator RetryJoinAfterShutdown()
     {
-        yield return new WaitForSeconds(0.5f); // Wait for shutdown to complete
+        // Wait for shutdown to complete properly
+        yield return new WaitUntil(() => NetworkManager.Singleton != null && 
+                                         !NetworkManager.Singleton.IsHost && 
+                                         !NetworkManager.Singleton.IsClient);
+        
+        // Additional short wait to ensure complete cleanup
+        yield return new WaitForSeconds(0.5f);
+        
+        Debug.Log("Shutdown complete, retrying join...");
         
         if (!NetworkManager.Singleton.IsHost && !NetworkManager.Singleton.IsClient)
         {
@@ -960,7 +1054,7 @@ public class P2P_Manager : NetworkBehaviour
         else
         {
             Debug.LogError("Still connected after shutdown attempt");
-            UpdateStatus("Error: Could not disconnect");
+            UpdateStatus("Error: Could not disconnect for reconnection");
         }
     }
 
