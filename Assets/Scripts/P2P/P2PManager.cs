@@ -232,8 +232,8 @@ public class P2P_Manager : NetworkBehaviour
                 Debug.Log($"Player already exists for client {clientId}, skipping spawn");
                 continue;
             }
-            spawnPoint = GameObject.Find("SpawnPos");
-            Vector3 spawnPos = CalculateSpawnPosition(i, clients.Count);
+
+            Vector3 spawnPos = new Vector3(490f, 100f, 331);
             GameObject player = Instantiate(PlayerPrefab.Prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = player.GetComponent<NetworkObject>();
 
@@ -265,21 +265,9 @@ public class P2P_Manager : NetworkBehaviour
         Debug.Log("Finished spawning all players");
         SpawnVan();
         enemySpawner.OnNetworkSpawn();
-        SpawnRoleta();
     }
 
-    private Vector3 CalculateSpawnPosition(int index, int totalPlayers)
-    {
-        float radius = 5f;
-        float angle = index * (2f * Mathf.PI / totalPlayers);
-        Vector3 center = spawnPoint != null ? spawnPoint.transform.position : Vector3.zero;
 
-        return center + new Vector3(
-            Mathf.Cos(angle) * radius,
-            0f,
-            Mathf.Sin(angle) * radius
-        );
-    }
 
     public void SpawnVan()
     {
