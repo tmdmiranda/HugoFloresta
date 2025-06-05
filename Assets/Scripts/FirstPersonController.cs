@@ -271,6 +271,9 @@ public class FirstPersonController : NetworkBehaviour
 
     private void HandleMovement()
     {
+        if (characterController == null || !characterController.enabled)
+            return;
+
         Vector3 worldDirection = CalculateWorldDirection();
         currentMovement.x = worldDirection.x * CurrentSpeed;
         currentMovement.z = worldDirection.z * CurrentSpeed;
