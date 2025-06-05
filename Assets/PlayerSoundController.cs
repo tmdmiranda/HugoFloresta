@@ -14,14 +14,12 @@ public class PlayerSoundController : MonoBehaviour
         {
             Walk.Stop();
         }
-    }
-
-    void Update()
+    }    void Update()
     {
         if (Walk != null && inputHandler != null)
         {
             // Se houver input de movimento (andar ou sprintar)
-            if (inputHandler.MovementInput.magnitude > 0.1f && (inputHandler.SprintTriggered || inputHandler.MovementInput.magnitude > 0.1f))
+            if (inputHandler.MovementInput.magnitude > 0.1f)
             {
                 if (!Walk.isPlaying)
                 {
