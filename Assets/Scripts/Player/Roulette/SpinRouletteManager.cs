@@ -7,6 +7,10 @@ public class SpinRouletteManager : MonoBehaviour
     private float currentSpeed = 0f;
     private bool isSpinning = false;
 
+    // Add these properties
+    public float CurrentAngle => wheel.localEulerAngles.y;
+    public bool IsSpinning => isSpinning;
+
     public void SpinWheel()
     {
         currentSpeed = spinSpeed;
