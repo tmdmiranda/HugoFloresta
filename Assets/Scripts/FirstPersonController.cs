@@ -225,18 +225,21 @@ public class FirstPersonController : NetworkBehaviour
         {
             UpdateAnimationStateServerRpc(state);
         }
-    }
-
-    [ServerRpc]
+    }    [ServerRpc]
     private void UpdateAnimationStateServerRpc(NetworkedAnimationState state)
     {
+        // Update the NetworkVariable on the server
+        networkedAnimationState.Value = state;
+        
+        // Send to all clients
         UpdateAnimationStateClientRpc(state);
-    }
-
-    [ClientRpc]
+    }[ClientRpc]
     private void UpdateAnimationStateClientRpc(NetworkedAnimationState state)
     {
-        networkedAnimationState.Value = state;
+        // Don't modify the NetworkVariable here - it's already been set by the server
+        // Just update the animator directly on all clients
+        animator.SetFloat("Speed", state.Speed);
+        // Add other animation parameters as needed
     }
 
     private void ApplyHorizontalRotation(float rotationAmount)
