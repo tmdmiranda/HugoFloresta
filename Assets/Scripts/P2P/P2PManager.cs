@@ -264,6 +264,7 @@ public class P2P_Manager : NetworkBehaviour
 
         Debug.Log("Finished spawning all players");
         SpawnVan();
+        SpawnRoleta();
         enemySpawner.OnNetworkSpawn();
     }
 
@@ -279,12 +280,12 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        Vector3 spawnPois = spawnPoint.transform.position;
-        if (Physics.Raycast(spawnPois, Vector3.down, out RaycastHit hit, 200f))
+        Vector3 spawnPoint = new Vector3(510, 120, 351); // start high
+        if (Physics.Raycast(spawnPoint, Vector3.down, out RaycastHit hit, 200f))
         {
-            spawnPois = hit.point + Vector3.up * 0.1f; // just above ground
+            spawnPoint = hit.point + Vector3.up * 0.1f; // just above ground
         }
-        GameObject van = Instantiate(vanPrefab, spawnPois, Quaternion.identity);
+        GameObject van = Instantiate(vanPrefab, spawnPoint, Quaternion.identity);
         NetworkObject vanNetObj = van.GetComponent<NetworkObject>();
 
         if (vanNetObj == null)
@@ -296,7 +297,6 @@ public class P2P_Manager : NetworkBehaviour
         vanNetObj.Spawn();
         Debug.Log("Van spawned successfully");
     }
-
 
     public void SpawnRoleta()
     {
