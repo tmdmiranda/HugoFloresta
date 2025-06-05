@@ -1512,6 +1512,7 @@ GameObject:
   - component: {fileID: 2051217698}
   - component: {fileID: 2051217699}
   - component: {fileID: 2051217700}
+  - component: {fileID: 2051217701}
   m_Layer: 0
   m_Name: 'Manager '
   m_TagString: Untagged
@@ -1547,6 +1548,7 @@ MonoBehaviour:
     SourceHashToOverride: 0
     OverridingTargetPrefab: {fileID: 7591108086318982121, guid: 300523830fb5eb2459cb6c98f5811bae, type: 3}
   enemySpawner: {fileID: 2051217699}
+  spawnPoint: {fileID: 0}
   vanPrefab: {fileID: 5177096077908297589, guid: 450aecb61f002f34386788d88e0bc191, type: 3}
 --- !u!114 &2051217695
 MonoBehaviour:
@@ -1638,6 +1640,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 040d018686f35d145b605fcbf54d6ef5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &2051217701
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2051217691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4a790f6323fd5e488b699f9bbbcc795, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableDebugDisconnect: 1
+  debugDisconnectKey: 106
+  mainMenuSceneName: StartingMenu
+  lobbySceneName: StartingMenu
+  gameSceneName: MainScene
+  autoCreateDisconnectionTester: 1
+  autoCreateDisconnectionSceneManager: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
