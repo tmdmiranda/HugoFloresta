@@ -202,6 +202,7 @@ MonoBehaviour:
   wanderTimer: 15
   minWanderDistance: 10
   animator: {fileID: 7238467698898982755}
+  audioController: {fileID: 0}
 --- !u!33 &8849811822001235466
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -301,7 +302,7 @@ AudioSource:
   m_audioClip: {fileID: 8300000, guid: 23cb04fb19b1a754bb91d130b8cc945f, type: 3}
   m_Resource: {fileID: 8300000, guid: 23cb04fb19b1a754bb91d130b8cc945f, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.298
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -310,7 +311,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 25
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -345,7 +346,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
