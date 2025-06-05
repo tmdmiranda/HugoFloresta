@@ -95,10 +95,12 @@ public class FirstPersonController : NetworkBehaviour
         Quaternion.identity, 
         NetworkVariableReadPermission.Everyone, 
         NetworkVariableWritePermission.Owner
-    );
-
-    void Start()
+    );    void Start()
     {
+        // Clean up conflicting components for ALL players (owners and non-owners)
+        // This must be done before any other setup to prevent position conflicts
+        CleanupConflictingComponents();
+
         // Capture original transform values
         if (playerBody != null)
         {
@@ -114,9 +116,6 @@ public class FirstPersonController : NetworkBehaviour
             originalCharacterCenter = characterController.center;
             originalCharacterHeight = characterController.height;
         }
-
-        // Clean up conflicting components to prevent position desync
-        CleanupConflictingComponents();
 
         if (IsOwner)
         {
@@ -157,6 +156,17 @@ public class FirstPersonController : NetworkBehaviour
     private void OnAnimationStateChanged(NetworkedAnimationState previousValue, NetworkedAnimationState newValue)
     {
         animator.SetFloat("Speed", newValue.Speed);
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        
+        // Ensure conflicting components are disabled when network object spawns
+        // This is especially important for clients joining the game
+        CleanupConflictingComponents();
+        
+        Debug.Log($"FirstPersonController spawned for client {OwnerClientId}. IsOwner: {IsOwner}");
     }
 
     void Update()
@@ -205,8 +215,7 @@ public class FirstPersonController : NetworkBehaviour
     {
         // This will be handled in InterpolateToNetworkTransform()
     }
-    
-    private void InterpolateToNetworkTransform()
+      private void InterpolateToNetworkTransform()
     {
         // Smoothly interpolate non-owner players to network position
         float lerpRate = Time.deltaTime * 15f; // Adjust speed as needed
@@ -217,8 +226,22 @@ public class FirstPersonController : NetworkBehaviour
         // Ensure player body stays synchronized with main transform
         if (playerBody != null)
         {
-            // Player body should follow the main transform
-            // This ensures the 3D model stays with the player position
+            // Force the player body to maintain its relative position to the main transform
+            // This is crucial for keeping the 3D model aligned with the network position
+            playerBody.position = transform.position + transform.TransformDirection(originalBodyPosition);
+            playerBody.rotation = transform.rotation;
+            
+            // Apply current crouch state to the body
+            if (isCrouchingNetwork.Value)
+            {
+                playerBody.localPosition = crouchBodyPosition;
+                playerBody.localScale = crouchBodyScale;
+            }
+            else
+            {
+                playerBody.localPosition = originalBodyPosition;
+                playerBody.localScale = originalBodyScale;
+            }
         }
     }
 
@@ -379,20 +402,20 @@ public class FirstPersonController : NetworkBehaviour
     private void SetCrouchStateServerRpc(bool state)
     {
         isCrouchingNetwork.Value = state;
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Disables conflicting movement and camera systems to prevent position desync
     /// This ensures FirstPersonController has full control over player positioning
     /// </summary>
     private void CleanupConflictingComponents()
     {
+        Debug.Log($"[FirstPersonController] Cleaning up conflicting components for {gameObject.name} (IsOwner: {IsOwner})");
+
         // Disable old P2P movement system
         var playerMovementP2P = GetComponent<PlayerMovementP2P>();
         if (playerMovementP2P != null)
         {
             playerMovementP2P.enabled = false;
-            Debug.Log("Disabled conflicting PlayerMovementP2P component");
+            Debug.Log($"[FirstPersonController] Disabled conflicting PlayerMovementP2P component on {gameObject.name}");
         }
 
         // Disable conflicting camera scripts
@@ -400,43 +423,53 @@ public class FirstPersonController : NetworkBehaviour
         if (moveCamera != null)
         {
             moveCamera.enabled = false;
-            Debug.Log("Disabled conflicting MoveCamera component");
+            Debug.Log($"[FirstPersonController] Disabled conflicting MoveCamera component on {gameObject.name}");
         }
 
         var playerCam = GetComponent<PlayerCam>();
         if (playerCam != null)
         {
             playerCam.enabled = false;
-            Debug.Log("Disabled conflicting PlayerCam component");
+            Debug.Log($"[FirstPersonController] Disabled conflicting PlayerCam component on {gameObject.name}");
         }
 
         // Also check for these components on child objects
-        var childMoveCameras = GetComponentsInChildren<MoveCamera>();
+        var childMoveCameras = GetComponentsInChildren<MoveCamera>(true); // Include inactive
         foreach (var cam in childMoveCameras)
         {
-            if (cam != moveCamera) // Don't disable the same one twice
+            if (cam != moveCamera && cam.enabled) // Don't disable the same one twice
             {
                 cam.enabled = false;
-                Debug.Log("Disabled conflicting MoveCamera component on child object");
+                Debug.Log($"[FirstPersonController] Disabled conflicting MoveCamera component on child object: {cam.gameObject.name}");
             }
         }
 
-        var childPlayerCams = GetComponentsInChildren<PlayerCam>();
+        var childPlayerCams = GetComponentsInChildren<PlayerCam>(true); // Include inactive
         foreach (var cam in childPlayerCams)
         {
-            if (cam != playerCam) // Don't disable the same one twice
+            if (cam != playerCam && cam.enabled) // Don't disable the same one twice
             {
                 cam.enabled = false;
-                Debug.Log("Disabled conflicting PlayerCam component on child object");
+                Debug.Log($"[FirstPersonController] Disabled conflicting PlayerCam component on child object: {cam.gameObject.name}");
             }
         }
 
         // Disable any Rigidbody that might interfere (keeping it for physics but removing control)
         var rb = GetComponent<Rigidbody>();
-        if (rb != null)
+        if (rb != null && !rb.isKinematic)
         {
             rb.isKinematic = true; // Prevent physics interference with CharacterController
-            Debug.Log("Set Rigidbody to kinematic to prevent physics conflicts");
+            Debug.Log($"[FirstPersonController] Set Rigidbody to kinematic to prevent physics conflicts on {gameObject.name}");
         }
+
+        // For non-owners, also disable the CharacterController to prevent conflicts
+        // The position will be controlled by network interpolation instead
+        if (!IsOwner && characterController != null)
+        {
+            characterController.enabled = false;
+            Debug.Log($"[FirstPersonController] Disabled CharacterController for non-owner player {gameObject.name}");
+        }
+
+        Debug.Log($"[FirstPersonController] Cleanup complete for {gameObject.name}");
     }
 }
