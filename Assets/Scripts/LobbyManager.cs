@@ -16,14 +16,22 @@ public class LobbyManager : MonoBehaviour
     [Header("Game Controls")]
     public Button startGameButton;
     public TMP_Text startGameErrorText;
+    
+    [Header("Connection Controls")]
+    public Button disconnectButton;
 
-    private P2P_Manager p2pManager;
-
-    private void Start()
+    private P2P_Manager p2pManager;    private void Start()
     {
-        p2pManager = FindObjectOfType<P2P_Manager>();
+        p2pManager = FindFirstObjectByType<P2P_Manager>();
         startGameButton.gameObject.SetActive(NetworkManager.Singleton.IsHost);
         startGameButton.onClick.AddListener(OnStartGameClicked);
+        
+        // Setup disconnect button if it exists
+        if (disconnectButton != null)
+        {
+            disconnectButton.onClick.AddListener(OnDisconnectClicked);
+            disconnectButton.gameObject.SetActive(true);
+        }
     }
 
     
@@ -129,6 +137,64 @@ public class LobbyManager : MonoBehaviour
     {
         startGameButton.gameObject.SetActive(isHost);
         startGameErrorText.text = isHost ? "" : "Only host can start game";
+    }
+
+    /// <summary>
+    /// Handle disconnect button click
+    /// </summary>
+    public void OnDisconnectClicked()
+    {
+        Debug.Log("Disconnect button clicked");
+        
+        if (p2pManager != null)
+        {
+            p2pManager.ManualDisconnect();
+        }
+        else
+        {
+            Debug.LogError("P2P_Manager not found!");
+            
+            // Fallback disconnect
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle disconnection events (can be called by P2P_Manager)
+    /// </summary>
+    public void OnDisconnected(string reason)
+    {
+        Debug.Log($"Lobby received disconnection: {reason}");
+        
+        // Update UI to show disconnection
+        if (startGameErrorText != null)
+        {
+            startGameErrorText.text = reason;
+        }
+        
+        // Clear player list
+        ClearPlayerList();
+    }
+
+    /// <summary>
+    /// Clear all player displays
+    /// </summary>
+    private void ClearPlayerList()
+    {
+        for (int i = 0; i < playerNameTexts.Length; i++)
+        {
+            playerNameTexts[i].gameObject.SetActive(false);
+            if (playerReadyTexts != null && i < playerReadyTexts.Length)
+                playerReadyTexts[i].gameObject.SetActive(false);
+            if (isReadyButtons != null && i < isReadyButtons.Length)
+            {
+                isReadyButtons[i].gameObject.SetActive(false);
+                isReadyButtons[i].onClick.RemoveAllListeners();
+            }
+        }
     }
 
     
