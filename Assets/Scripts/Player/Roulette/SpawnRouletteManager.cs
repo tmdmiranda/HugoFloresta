@@ -21,20 +21,24 @@ public class SpawnRodinhaManager : NetworkBehaviour
         }
 
         // Choose a random spawn position from your predefined points
-        Vector3 spawnPoint = GetRandomSpawnPosition();
+ 
+
+                Vector3 initialSpawnPosition = GetRandomSpawnPosition();
+        Vector3 finalSpawnPoint = initialSpawnPosition;
 
         // Start high and raycast down to find ground
-        Vector3 rayStart = spawnPoint + Vector3.up * 100f;
-        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 200f, groundLayer))
+        RaycastHit hit;
+        if (Physics.Raycast(initialSpawnPosition, Vector3.down, out hit, 500f)) // adicionei um quito +dist
         {
-            spawnPoint = hit.point + Vector3.up * 0.1f; // Slightly above ground
+            finalSpawnPoint = hit.point + (Vector3.up * 0.1f);
+            Debug.Log($"hit:{hit.point} final:{finalSpawnPoint}");
         }
 
         // Destroy existing roulette first
         DestroyCurrentRoulette();
 
         // Create and spawn the new roulette
-        GameObject roleta = Instantiate(RoulettePrefab, spawnPoint, Quaternion.identity);
+        GameObject roleta = Instantiate(RoulettePrefab, finalSpawnPoint, Quaternion.identity);
         NetworkObject roletaNetObj = roleta.GetComponent<NetworkObject>();
 
         if (roletaNetObj == null)
@@ -46,7 +50,6 @@ public class SpawnRodinhaManager : NetworkBehaviour
 
         roletaNetObj.Spawn();
         currentRoulette = roleta;
-        Debug.Log("Roulette spawned successfully at: " + spawnPoint);
     }
 
     private Vector3 GetRandomSpawnPosition()
@@ -54,11 +57,12 @@ public class SpawnRodinhaManager : NetworkBehaviour
         // Your predefined spawn points
         Vector3[] spawnPoints = new Vector3[]
         {
-            new Vector3(668, 20, 1625),
-            new Vector3(700, 20, 1845),
-            new Vector3(590, 20, 1800),
-            new Vector3(520, 20, 1700),
-            new Vector3(650, 20, 1845)
+            new Vector3(474, 100, 612),
+            new Vector3(658, 100, 289),
+            new Vector3(608, 100, 289),
+            new Vector3(550, 100, 289),
+            new Vector3(500, 100, 289),
+            new Vector3(480, 100, 331),
         };
 
         return spawnPoints[Random.Range(0, spawnPoints.Length)];
@@ -66,6 +70,7 @@ public class SpawnRodinhaManager : NetworkBehaviour
 
     public void DestroyCurrentRoulette()
     {
+
         currentRoulette = GameObject.Find("Roleta(Clone)");
 
         Debug.Log("Destroying current Rodinha...");

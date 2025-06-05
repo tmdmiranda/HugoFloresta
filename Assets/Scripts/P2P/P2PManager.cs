@@ -318,7 +318,7 @@ public class P2P_Manager : NetworkBehaviour
             return;
         }
 
-        Vector3 initialSpawnPosition = new Vector3(900f, 100f, 423f); // atart high
+        Vector3 initialSpawnPosition = new Vector3(480f, 100f, 331); // atart high
         Vector3 finalSpawnPoint = initialSpawnPosition;
 
         RaycastHit hit;

@@ -1671,7 +1671,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  Roleta: {fileID: 0}
+  Roleta: {fileID: 2088531331927311078, guid: 0083f7ad223ecd244885ed14f157661f, type: 3}
   nameInputField: {fileID: 265468821}
   ipInputField: {fileID: 628894160}
   hostIp: {fileID: 1324297605}
@@ -1790,13 +1790,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4a790f6323fd5e488b699f9bbbcc795, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableDebugDisconnect: 1
-  debugDisconnectKey: 106
-  mainMenuSceneName: StartingMenu
-  lobbySceneName: StartingMenu
-  gameSceneName: MainScene
-  autoCreateDisconnectionTester: 1
-  autoCreateDisconnectionSceneManager: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
