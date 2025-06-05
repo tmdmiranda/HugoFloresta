@@ -258,15 +258,11 @@ public class P2P_Manager : NetworkBehaviour
 
     private Vector3 CalculateSpawnPosition(int index, int totalPlayers)
     {
-        float radius = 5f;
-        float angle = index * (2f * Mathf.PI / totalPlayers);
+        //float radius = 5f;
+       // float angle = index * (2f * Mathf.PI / totalPlayers);
         Vector3 center = spawnPoint != null ? spawnPoint.transform.position : Vector3.zero;
 
-        return center + new Vector3(
-            Mathf.Cos(angle) * radius,
-            0f,
-            Mathf.Sin(angle) * radius
-        );
+        return center;
     }
 
     public void SpawnVan()

@@ -6,9 +6,8 @@ public class FlashLightController : NetworkBehaviour
     [Header("Flashlight Components")]
     public Light flashlightLight;
     public MeshRenderer flashlightMesh;
-    
-    [Header("Network Variables")]
-    private NetworkVariable<bool> isOn = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+      [Header("Network Variables")]
+    private NetworkVariable<bool> isOn = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     void Start()
     {
@@ -26,16 +25,18 @@ public class FlashLightController : NetworkBehaviour
             isOn.OnValueChanged -= OnFlashlightStateChanged;
         
         base.OnDestroy();
-    }
-
-    void Update()
+    }    void Update()
     {
         // Only the owner can control the flashlight
         if (!IsOwner) return;
         
         if (Input.GetKeyDown(KeyCode.F))
         {
+            // If using Server write permission, use ServerRpc
             ToggleFlashlightServerRpc();
+            
+            // If using Owner write permission, modify directly:
+            // isOn.Value = !isOn.Value;
         }
     }
 
