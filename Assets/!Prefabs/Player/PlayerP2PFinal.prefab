@@ -44,8 +44,8 @@ Light:
   serializedVersion: 11
   m_Type: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 100
-  m_Range: 33.068817
+  m_Intensity: 200
+  m_Range: 67.554596
   m_SpotAngle: 30
   m_InnerSpotAngle: 18.075275
   m_CookieSize: 10
@@ -613,6 +613,15 @@ MonoBehaviour:
   walkAnimationSpeed: 0.5
   sprintAnimationSpeed: 1
   crouchAnimationSpeed: 0.3
+  standingHeight: 2
+  crouchHeight: 1
+  standingCenter: {x: 0, y: 0, z: 0}
+  crouchCenter: {x: 0, y: -0.5, z: 0}
+  standingCameraPosition: {x: 0, y: 0.7, z: 0}
+  crouchCameraPosition: {x: 0, y: 0, z: 0}
+  standingBodyPosition: {x: 0, y: 0, z: 0}
+  crouchBodyPosition: {x: 0, y: -0.5, z: 0}
+  crouchBodyScale: {x: 1, y: 0.5, z: 1}
   animator: {fileID: 1189802502035831016}
 --- !u!114 &-7261893497329658280
 MonoBehaviour:
