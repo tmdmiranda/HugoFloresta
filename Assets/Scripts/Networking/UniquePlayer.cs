@@ -1,0 +1,49 @@
+using Unity.Netcode;
+using UnityEngine;
+using TMPro;
+
+[RequireComponent(typeof(NetworkObject))]
+public class UniquePlayer : NetworkBehaviour
+{
+
+    // Mainly for NameTag but can be extended for other visual customizations
+    // like player skins, colors, etc which we did not use.
+
+    [Header("Visual Components")]
+    [SerializeField] private TextMeshPro nameTag;
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        ApplyVisualCustomization();
+
+        Debug.Log($"UniquePlayer OnNetworkSpawn called for {OwnerClientId}", this);
+    }
+
+    public void SetPlayerName(string name)
+    {
+        if (nameTag != null)
+        {
+            nameTag.text = name;
+        }
+        else
+        {
+            Debug.LogWarning("NameTag reference not set in inspector!", this);
+        }
+    }
+
+    
+    private void ApplyVisualCustomization()
+    {
+        if (PlayerDataManager.Instance == null)
+        {
+            Debug.LogError("PlayerDataManager instance not found!", this);
+            return;
+        }
+
+        var playerData = PlayerDataManager.Instance.GetPlayerData(OwnerClientId);
+        SetPlayerName(playerData.playerName);
+
+    }
+}

@@ -6,6 +6,7 @@ TagManager:
   tags:
   - grnd7
   - Enemy
+  - Roulette
   layers:
   - Default
   - TransparentFX
